@@ -119,6 +119,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Download YOLO models:**
+The models will be automatically downloaded on first run, or manually download:
+```bash
+# The app will auto-download yolov8n.pt on first run
+# For other models, they'll download when selected in the UI
+```
+
 ### Running the Application
 
 ```bash
