@@ -437,7 +437,7 @@ class SecurityMonitorApp:
             
             # Store advanced analytics
             st.session_state.advanced_analytics = {
-                'zone_analysis': self.zone_analyzer.get_zone_statistics(),
+                'zone_analysis': self.zone_analyzer.get_zone_summary(),
                 'size_analysis': self.size_analyzer.get_size_statistics(),
                 'confidence_analysis': self.confidence_analyzer.get_confidence_trend()
             }
@@ -651,6 +651,12 @@ class SecurityMonitorApp:
         
         # System info
         components.display_system_info()
+        
+        # Validate class selection
+        if not settings['tracked_classes']:
+            st.error("⚠️ No classes selected! Please select at least one class to track.")
+            st.info("💡 Tip: Use 'Default' or 'All Classes' preset in the sidebar, or select individual classes in 'Custom Selection' mode.")
+            st.stop()
         
         # Initialize detector
         try:

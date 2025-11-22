@@ -292,6 +292,23 @@ FRAME_WIDTH = 640
 FRAME_HEIGHT = 640
 ```
 
+### Class Selection in UI
+
+The sidebar provides three convenient presets for class selection:
+
+- **Default (Vehicles & People)**: Tracks 6 common classes (person, car, bicycle, motorcycle, bus, truck)
+- **All Classes (80)**: Enables detection of all 80 COCO classes
+- **Custom Selection**: Choose specific classes organized by category:
+  - People & Animals (11 classes)
+  - Vehicles (8 classes)
+  - Furniture (5 classes)
+  - Electronics (9 classes)
+  - Food & Kitchen (17 classes)
+  - Sports & Outdoors (10 classes)
+  - Other (20 classes)
+
+**Note**: Tracking more classes increases processing time slightly but improves detection coverage. For optimal performance on resource-constrained systems, select only necessary classes.
+
 ---
 
 ## Troubleshooting

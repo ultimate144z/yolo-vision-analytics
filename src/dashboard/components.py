@@ -299,12 +299,57 @@ def create_settings_sidebar():
     settings['frame_skip'] = frame_skip
     
     # Class selection
-    st.sidebar.subheader("📦 Tracked Classes")
-    selected_classes = []
-    for cls in config.TRACKED_CLASSES:
-        # Unique key per class to avoid DuplicateWidgetID
-        if st.sidebar.checkbox(cls.capitalize(), value=True, key=f"track_cls_{cls}"):
-            selected_classes.append(cls)
+    st.sidebar.markdown("#### Tracked Classes")
+    
+    # Preset options
+    class_preset = st.sidebar.selectbox(
+        "Class Preset:",
+        ["Default (Vehicles & People)", "All Classes (80)", "Custom Selection"],
+        help="Choose which object classes to detect"
+    )
+    
+    if class_preset == "Default (Vehicles & People)":
+        selected_classes = config.TRACKED_CLASSES
+    elif class_preset == "All Classes (80)":
+        selected_classes = config.YOLO_ALL_CLASSES
+    else:  # Custom Selection
+        st.sidebar.markdown("**Select Classes to Track:**")
+        
+        # Group classes by category for better UX
+        categories = {
+            "People & Animals": ['person', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'bird'],
+            "Vehicles": ['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat'],
+            "Furniture": ['chair', 'couch', 'bed', 'dining table', 'toilet'],
+            "Electronics": ['tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster'],
+            "Food & Kitchen": ['bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 
+                              'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake'],
+            "Sports & Outdoors": ['frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 
+                                 'baseball glove', 'skateboard', 'surfboard', 'tennis racket'],
+            "Other": ['traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'backpack',
+                     'umbrella', 'handbag', 'tie', 'suitcase', 'potted plant', 'book', 'clock', 'vase', 
+                     'scissors', 'teddy bear', 'hair drier', 'toothbrush', 'refrigerator', 'sink']
+        }
+        
+        selected_classes = []
+        
+        # Use expanders for each category
+        for category, classes in categories.items():
+            with st.sidebar.expander(f"**{category}** ({len(classes)} classes)"):
+                select_all = st.checkbox(f"Select All {category}", key=f"select_all_{category}")
+                
+                for cls in classes:
+                    default_checked = cls in config.TRACKED_CLASSES or select_all
+                    if st.checkbox(cls.capitalize(), value=default_checked, key=f"track_cls_{cls}"):
+                        selected_classes.append(cls)
+    
+    # Display selected count with color-coded feedback
+    if len(selected_classes) == 0:
+        st.sidebar.error(f"⚠️ No classes selected")
+    elif len(selected_classes) <= 10:
+        st.sidebar.success(f"✓ {len(selected_classes)} classes selected")
+    else:
+        st.sidebar.info(f"✓ {len(selected_classes)} classes selected")
+    
     settings['tracked_classes'] = selected_classes
     
     st.sidebar.markdown("---")
