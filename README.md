@@ -1,55 +1,56 @@
-# YOLO Vision Analytics - Real-Time Object Detection System
+# YOLO Vision Analytics – Real-Time Object Intelligence Platform
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-purple)](https://github.com/ultralytics/ultralytics)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red)](https://streamlit.io/)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Models YOLOv8](https://img.shields.io/badge/Models-YOLOv8-navy)](https://github.com/ultralytics/ultralytics)
+[![Framework Streamlit](https://img.shields.io/badge/Framework-Streamlit-red)](https://streamlit.io/)
+[![Status Production Ready](https://img.shields.io/badge/Status-Production%20Ready-green)](#project-status)
+[![Tests 100% Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success)](tests/)
+[![Last Updated](https://img.shields.io/badge/Updated-Nov%2022%202025-lightgrey)](#)
+[![Issues](https://img.shields.io/badge/Issues-GitHub%20Tracker-informational)](https://github.com/ultimate144z/yolo-vision-analytics/issues)
 
-**Version 2.0** - Production-Ready Computer Vision Analytics Platform
+Version: 2.0.0
 
-A comprehensive real-time object detection and analytics system built with YOLOv8, OpenCV, and Streamlit. Perfect for security monitoring, traffic analysis, and computer vision applications.
+A production-grade real-time object detection and analytics system built on YOLOv8, OpenCV, and Streamlit. Designed for security monitoring, traffic analysis, and operational video intelligence.
 
-## Project Overview
+## Purpose & Scope
 
-This system processes video feeds (webcam or uploaded videos) to detect and track objects in real-time. It provides:
-- Real-time object detection with bounding boxes
-- **NEW**: Real-time FPS & ETA tracking 
-- **NEW**: 5 YOLO models to choose from (speed vs. accuracy) 
-- **NEW**: Frame skipping for up to 5x faster processing 
-- **NEW**: Export annotated video with detections 
-- Object counting by category (person, car, bicycle, etc.)
-- Activity heatmaps showing high-traffic zones
-- **NEW**: Zone-based activity analysis 
-- **NEW**: Object size distribution analysis 
-- **NEW**: Confidence trend monitoring 
-- Timestamped detection logs
-- Interactive analytics dashboard
-- Exportable detection reports (JSON/CSV/PDF)
+This README provides a high-level product overview. Operational usage lives in `PROJECT_GUIDE.md`. Architecture, extension points, and internal module detail live in `DEVELOPER_GUIDE.md`. Performance rationale, methodology, and benchmark artifacts live in `OPTIMIZATIONS.md`.
 
-##  New in Version 2.0
+Capabilities:
+- Real-time multi-class object detection (80 COCO classes)
+- Configurable model selection (nano → xlarge)
+- Frame sampling (skip factors for throughput scaling)
+- Per-frame inference + FPS metrics (ETA removed—see Optimizations doc)
+- Object counting & temporal distributions
+- Spatial analytics: heatmaps & zone occupancy
+- Size & confidence trend analytics
+- Annotated video export (optional)
+- Structured reporting (JSON / CSV / PDF)
+- Stateless batch or interactive session execution
 
-### Performance Optimizations
-- **70% faster page reloads** with model caching
-- **Real-time FPS counter** during processing
-- **Estimated time remaining** (ETA) calculation
-- **Frame skipping option** for faster processing
-- **5 model options** for speed/accuracy tradeoff
+## Highlights in 2.0
 
-### Advanced Analytics
-- **Zone Analyzer**: Identifies high-traffic areas in 3x3 grid
-- **Size Analyzer**: Object distance estimation
-- **Confidence Analyzer**: Detection quality monitoring over time
+### Performance
+- Cached model initialization (milliseconds after first load)
+- Moving-average FPS sampling (stable performance signal)
+- Frame skipping (adaptive workload reduction)
+- Five selectable model tiers (speed ↔ accuracy continuum)
+
+### Analytics
+- Zone analyzer (3×3 spatial grid activity)
+- Size distribution & proximity inference
+- Confidence temporal trend & anomaly surfacing
 
 ### User Experience
-- **Model selection UI**: Choose nano/small/medium/large/xlarge
-- **Processing speed slider**: Adjust frame skip (1x to 5x faster)
-- **Rich progress display**: FPS, Inference time, ETA, Detections
-- **Cached loading**: Instant page switches
-- **Video export**: Save annotated video with all detections visible 
+- Declarative sidebar configuration
+- Real-time progress metrics (FPS, inference latency, detections)
+- Cached navigation (no remount delays)
+- Optional annotated export path
 
- **See [OPTIMIZATION_FEATURES.md](OPTIMIZATION_FEATURES.md) for complete details**
+Refer to `OPTIMIZATIONS.md` for methodology, deeper reasoning, and benchmark protocol.
 
-##  Tech Stack
+## Tech Stack
 
 - **YOLOv8** (Ultralytics) - Object detection model
 - **OpenCV** - Video processing and computer vision
@@ -58,7 +59,7 @@ This system processes video feeds (webcam or uploaded videos) to detect and trac
 - **Pandas** - Data analysis and manipulation
 - **NumPy** - Numerical computations
 
-##  Project Structure
+## Project Structure (Condensed)
 
 ```
 yolov8_security_monitor/
@@ -119,12 +120,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Download YOLO models:**
-The models will be automatically downloaded on first run, or manually download:
-```bash
-# The app will auto-download yolov8n.pt on first run
-# For other models, they'll download when selected in the UI
-```
+**Model Weights:** Auto-downloaded on first selection (no manual step required). Larger weights are only fetched if explicitly chosen, minimizing footprint.
 
 ### Running the Application
 
@@ -142,36 +138,31 @@ The dashboard will open at `http://localhost:8501`
 ## Key Features
 
 ### 1. Real-Time Detection
-- Upload video files or use webcam feed
-- YOLOv8 nano model for fast inference
-- Real-time bounding box visualization
-- Confidence score display
+- Video file or webcam ingestion
+- Responsive bounding boxes & class labels
+- Confidence scores filtered by threshold
 
 ### 2. Object Analytics
-- Count objects by category
-- Track detection frequency over time
-- Generate time-series plots
-- Category-wise distribution charts
+- Distribution by class & time segment
+- Temporal frequency analysis
+- Confidence dispersion metrics
 
 ### 3. Activity Heatmaps
-- Visualize high-traffic zones
-- Identify areas with most detections
-- Color-coded intensity maps
-- Exportable heatmap images
+- Spatial density mapping
+- Zone ranking & hotspot surfacing
+- Exportable static artifacts
 
 ### 4. Detection Logging
-- Timestamped detection records
-- JSON and CSV export formats
-- Filterable by object class
-- Batch processing support
+- Structured event capture (frame, class, confidence, region)
+- Multi-format export pipeline
+- Class-level filtering
 
 ### 5. Interactive Dashboard
-- Clean, intuitive UI
-- Real-time metric updates
-- Downloadable reports
-- Customizable detection parameters
+- Parameterized session control
+- Real-time metric and analytics panels
+- Export orchestration tab
 
-##  Configuration
+## Configuration
 
 Edit `config/config.py` to customize:
 
@@ -185,7 +176,7 @@ IOU_THRESHOLD = 0.45
 TRACKED_CLASSES = ['person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck']
 ```
 
-##  Usage Examples
+## Usage Examples
 
 ### Upload Video
 1. Launch dashboard
@@ -205,7 +196,7 @@ TRACKED_CLASSES = ['person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck']
 3. Select report format (CSV/JSON/PDF)
 4. Click "Download Report"
 
-##  Testing
+## Testing
 
 ```bash
 # Run all tests
@@ -215,7 +206,7 @@ pytest tests/
 pytest --cov=src tests/
 ```
 
-##  Pipeline Overview
+## Processing Flow
 
 ```
 Video Input → YOLOv8 Detection → Object Tracking → Analytics Generation → Dashboard Visualization
@@ -223,7 +214,7 @@ Video Input → YOLOv8 Detection → Object Tracking → Analytics Generation �
                                                   Logs (JSON/CSV) ← Report Generator
 ```
 
-##  Learning Outcomes
+## Engineering Focus Areas
 
 This project demonstrates:
 - Computer vision with deep learning
@@ -251,7 +242,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenCV](https://opencv.org/) community
 - [Streamlit](https://streamlit.io/) team
 
-## Author
+## Author & Contacts
 
 **ultimate144z**
 - GitHub: [@ultimate144z](https://github.com/ultimate144z)
@@ -263,15 +254,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Version 2.0** - Production Ready
 
-**Features Completed:**
-- Real-time object detection (80 classes)
-- Video + webcam support with auto-detection
-- 5 YOLO model options (nano to xlarge)
-- Frame skipping for up to 5x faster processing
-- Advanced analytics (zones, sizes, confidence trends)
-- Annotated video export
-- Multi-format reports (JSON/CSV/PDF)
-- Interactive dashboard with real-time metrics
-- Complete test coverage (10/10 passing)
+**Feature Set:**
+- Real-time detection & logging
+- Video + webcam ingestion
+- Five model tiers (speed/accuracy dial)
+- Frame sampling for throughput scaling
+- Advanced analytics (zones / size / confidence trends)
+- Annotated video export option
+- Multi-format reporting stack
+- Interactive Streamlit dashboard
+- Test suite (10/10 passing)
 
-**Last Updated**: November 20, 2025
+Last Updated: November 22, 2025
+
+---
+For detailed operational guidance: `PROJECT_GUIDE.md`  
+For architecture & extension points: `DEVELOPER_GUIDE.md`  
+For optimization methodology: `OPTIMIZATIONS.md`

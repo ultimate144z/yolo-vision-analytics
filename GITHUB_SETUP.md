@@ -1,4 +1,14 @@
-# GitHub Setup Guide
+# GitHub Setup & Operations Guide
+
+[![Repo](https://img.shields.io/badge/Repository-yolo--vision--analytics-blue)](https://github.com/ultimate144z/yolo-vision-analytics)
+[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version 2.0.0](https://img.shields.io/badge/Version-2.0.0-green)](#version)
+[![Tests 100% Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success)](tests/)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![Data Residency Local](https://img.shields.io/badge/Data-Local%20Only-critical)](#data--artifacts)
+[![Models YOLOv8](https://img.shields.io/badge/Models-YOLOv8-navy)](https://github.com/ultralytics/ultralytics)
+
+> Purpose: Operational reference for cloning, environment setup, contribution workflow, and repository hygiene. Product usage lives in `PROJECT_GUIDE.md`; architectural detail in `DEVELOPER_GUIDE.md`; performance rationale in `OPTIMIZATIONS.md`.
 
 ## Repository Information
 - **Repository**: https://github.com/ultimate144z/yolo-vision-analytics
@@ -6,9 +16,9 @@
 - **License**: MIT
 - **Version**: 2.0.0
 
-## What Was Pushed to GitHub
+## Contents
 
-### Files Included (40 files):
+### Included (tracked):
 - **Source Code**: All Python modules in `src/`
 - **Configuration**: `config/config.py`, `.env.template`
 - **Documentation**: README.md, DEVELOPER_GUIDE.md, PROJECT_GUIDE.md, OPTIMIZATIONS.md
@@ -17,22 +27,22 @@
 - **Scripts**: `activate.bat`, `activate.sh`
 - **License**: MIT License file
 
-### Files Excluded (via .gitignore):
+### Excluded (`.gitignore` policy):
 - **Virtual Environment**: `venv/` (users create their own)
 - **Model Files**: `*.pt` files (auto-downloaded on first run)
 - **Video Files**: Test videos in `data/temp/`
 - **Output Data**: Processed videos, logs, reports
 - **Cache Files**: `__pycache__/`, `.pytest_cache/`
 
-## For New Users Cloning the Repository
+## Onboarding (Clone & Run)
 
-### Step 1: Clone
+### 1. Clone
 ```bash
 git clone https://github.com/ultimate144z/yolo-vision-analytics.git
 cd yolo-vision-analytics
 ```
 
-### Step 2: Setup Virtual Environment
+### 2. Environment
 ```bash
 # Create virtual environment
 python -m venv venv
@@ -45,19 +55,19 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### Step 3: Install Dependencies
+### 3. Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Run Application
+### 4. Run Application
 ```bash
 streamlit run src/dashboard/app.py
 ```
 
-**Note**: YOLO models will be automatically downloaded on first run (yolov8n.pt ~6MB).
+Model weights are fetched automatically on first selection (nano by default). Larger tiers only download when chosen—keeps initial footprint minimal.
 
-## Repository Structure
+## Repository Structure (Condensed)
 
 ```
 yolo-vision-analytics/
@@ -82,14 +92,14 @@ yolo-vision-analytics/
 └── reports/            # Reports directory
 ```
 
-## Commit History
+## Commit History (Snapshot)
 
 1. **Initial commit** - Complete project structure and code
 2. **Merge commit** - Resolved GitHub README conflict
 3. **Remove large files** - Cleaned up model and video files
 4. **Documentation update** - Added model download instructions
 
-## Features Included in v2.0
+## Feature Set v2.0
 
 ✅ Real-time object detection (80 COCO classes)  
 ✅ Webcam + Video file support with auto-camera detection  
@@ -105,7 +115,7 @@ yolo-vision-analytics/
 
 ## Development Workflow
 
-### Making Changes
+### Branching & Changes
 ```bash
 # Create feature branch
 git checkout -b feature/your-feature
@@ -120,7 +130,7 @@ git push origin feature/your-feature
 # Create Pull Request on GitHub
 ```
 
-### Running Tests
+### Test Execution
 ```bash
 # Activate environment
 venv\Scripts\activate
@@ -140,7 +150,7 @@ pytest --cov=src tests/
 - **Documentation**: 4 comprehensive guides
 - **Dependencies**: 13 packages
 
-## Support
+## Support Channels
 
 - **Issues**: Report bugs or request features via GitHub Issues
 - **Pull Requests**: Contributions welcome!
@@ -148,7 +158,56 @@ pytest --cov=src tests/
 
 ## Repository URL
 
-🔗 https://github.com/ultimate144z/yolo-vision-analytics
+Primary: https://github.com/ultimate144z/yolo-vision-analytics
+
+Fork before large feature work to preserve clean upstream commit graph.
+
+---
+## Data & Artifacts
+Policy Summary:
+- No model weights committed (auto-download strategy)
+- No large video assets or generated exports tracked
+- Logs excluded to prevent noise & sensitive operational leakage
+
+Periodic Review: Confirm `.gitignore` still excludes emerging transient artifacts (e.g. profiling dumps).
+
+---
+## Release Hygiene
+Pre-release checklist:
+1. Ensure removal of accidental large binaries (`git rev-list --objects --all | grep -i .pt`)
+2. Validate test pass locally
+3. Update version badges in docs if version bump
+4. Re-run performance spot check (skip=1 nano baseline)
+5. Confirm documentation alignment (README scope vs guides)
+
+---
+## Contribution Expectations
+- Descriptive commit messages (Conventional prefix)
+- PR includes: scope, rationale, test evidence, risk notes
+- Avoid force-push on shared feature branches unless coordinated
+- Prefer small, reviewable increments over monolithic changes
+
+---
+## Security Practices
+- Keep dependencies current (`pip install -r requirements.txt --upgrade` monthly)
+- Scan for known CVEs with `pip-audit` (optional adoption)
+- Validate provenance of added model weights if introducing custom training
+
+---
+## Incident / Hotfix Flow
+1. Create branch `hotfix/<short-issue-ref>`
+2. Add targeted patch (no opportunistic refactors)
+3. Add/adjust regression test if applicable
+4. Merge with squash to isolate remediation
+5. Tag patch release (e.g. v2.0.1)
+
+---
+## Changelog (Upcoming)
+Adopt `CHANGELOG.md` (Keep a Change Log format) in next minor version for structured release notes.
+
+---
+## Status
+Repository stable, production ready. Next improvements: formal coverage reporting & tracking adapter integration.
 
 ---
 

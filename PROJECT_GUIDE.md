@@ -1,25 +1,40 @@
-#  YOLOv8 Security Monitor - Complete Project Guide
+# YOLO Vision Analytics – Project Usage Guide
 
-**Version**: 2.0.0 (Optimized)  
-**Status**:  Production Ready  
-**Last Updated**: November 20, 2025
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](#)
+[![Models](https://img.shields.io/badge/Models-YOLOv8-navy)](https://github.com/ultralytics/ultralytics)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green)](#project-status)
+[![Tests](https://img.shields.io/badge/Tests-100%25%20passing-success)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-Coming%20Soon-orange)](#)
+[![Issues](https://img.shields.io/badge/Issues-Tracked%20on%20GitHub-informational)](https://github.com/ultimate144z/yolo-vision-analytics/issues)
+
+Version: 2.0.0  
+Last Updated: November 22, 2025
+
+---
+
+> Purpose: This guide is the operational handbook for end users and analysts. It focuses on running the system, tuning parameters, interpreting outputs, and resolving common issues. Architectural and implementation details live in `DEVELOPER_GUIDE.md`. Performance rationale and benchmark methodology live in `OPTIMIZATIONS.md`.
 
 ---
 
 ##  Table of Contents
 
-1. [Quick Start](#-quick-start)
-2. [Project Status](#-project-status)
-3. [Commands Reference](#-commands-reference)
-4. [Project Structure](#-project-structure)
-5. [Usage Examples](#-usage-examples)
-6. [Configuration](#-configuration)
-7. [Troubleshooting](#-troubleshooting)
-8. [Best Practices](#-best-practices)
+1. [Quick Start](#quick-start)
+2. [Project Status](#project-status)
+3. [Commands Reference](#commands-reference)
+4. [Project Structure](#project-structure)
+5. [Usage Examples](#usage-examples)
+6. [Configuration](#configuration)
+7. [Troubleshooting](#troubleshooting)
+8. [Best Practices](#best-practices)
+9. [Performance Benchmarks](#performance-benchmarks)
+10. [Support & Resources](#support--resources)
+11. [Summary](#summary)
 
 ---
 
-##  Quick Start
+## Quick Start
 
 ### 1. Activate Environment
 
@@ -51,12 +66,12 @@ Dashboard opens at: `http://localhost:8501`
 4. Adjust frame skip if needed (1x to 5x faster)
 5. Enable "Save Annotated Video" if desired
 6. Click **"Process Video"**
-7. View real-time results with FPS, ETA, and detections
+7. View real-time results with FPS, inference time, and detections
 8. Download reports from Export tab
 
 ---
 
-##  Project Status
+## Project Status
 
 ### Deliverables Summary
 
@@ -74,16 +89,17 @@ Dashboard opens at: `http://localhost:8501`
 - OPTIMIZATIONS.md - Performance enhancements guide
 
 **Features:**
--  Real-time object detection (80 classes)
--  Video + webcam support
--  5 YOLO model options
--  Frame skipping (up to 5x faster)
--  Real-time FPS & ETA tracking
--  Advanced analytics (zones, sizes, trends)
--  Annotated video export
--  Multi-format reports (JSON/CSV/PDF)
--  Interactive dashboard
--  G: drive only (zero C: drive usage)
+- Real-time object detection (80 COCO classes)
+- Video + webcam support
+- Five YOLO model profiles (nano → xlarge)
+- Frame skipping (controlled sampling, up to 5× throughput)
+- Real-time FPS + per-frame inference timing
+- Advanced analytics (zones, size distribution, confidence trends)
+- Annotated video export (optional)
+- Multi-format reports (JSON / CSV / PDF)
+- Interactive Streamlit dashboard
+- Strict G: drive data residency (no C: drive writes)
+*Note*: ETA estimation was removed due to inconsistent accuracy under frame skipping; throughput and elapsed time are reported instead.
 
 ### Testing Results
 
@@ -99,7 +115,7 @@ Dashboard opens at: `http://localhost:8501`
 
 ---
 
-##  Commands Reference
+## Commands Reference
 
 ### Essential Commands
 
@@ -127,7 +143,7 @@ pytest --cov=src tests/
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 G:\yolov8_security_monitor\
@@ -173,7 +189,7 @@ G:\yolov8_security_monitor\
 
 ---
 
-##  Usage Examples
+## Usage Examples
 
 ### Example 1: Quick Video Analysis
 
@@ -243,7 +259,7 @@ Then restart application.
 
 ---
 
-##  Configuration
+## Configuration
 
 ### Model Selection (In UI)
 
@@ -278,7 +294,7 @@ FRAME_HEIGHT = 640
 
 ---
 
-##  Troubleshooting
+## Troubleshooting
 
 ### Common Issues & Solutions
 
@@ -348,7 +364,7 @@ Error: CUDA out of memory
 
 ---
 
-##  Best Practices
+## Best Practices
 
 ### For Optimal Performance
 
@@ -392,18 +408,20 @@ Error: CUDA out of memory
 
 ---
 
-##  Performance Benchmarks
+## Performance Benchmarks
 
 ### Processing Speed (Test: 1080p, 30 FPS, 5-minute video)
 
 | Configuration | FPS | Total Time | Notes |
 |--------------|-----|------------|-------|
 | Nano, skip=1, CPU | 12 | 12:30 | Baseline |
-| Nano, skip=2, CPU | 23 | 06:30 | 2x faster |
-| Nano, skip=5, CPU | 45 | 03:20 | 3.7x faster |
-| Large, skip=1, CPU | 4 | 37:30 | Most accurate |
-| Large, skip=3, CPU | 11 | 13:40 | Balanced |
-| Nano, skip=1, GPU | 35 | 04:17 | GPU boost |
+| Nano, skip=2, CPU | 23 | 06:30 | Throughput gain |
+| Nano, skip=5, CPU | 45 | 03:20 | Max sampling skip |
+| Large, skip=1, CPU | 4 | 37:30 | Highest accuracy |
+| Large, skip=3, CPU | 11 | 13:40 | Accuracy/perf balance |
+| Nano, skip=1, GPU | 35 | 04:17 | GPU acceleration |
+
+Metric Focus: Elapsed time + FPS provide actionable performance insight without speculative ETA values.
 
 ### Cache Performance
 
@@ -416,7 +434,7 @@ Settings Change:            Instant
 
 ---
 
-##  Support & Resources
+## Support & Resources
 
 ### Documentation
 
@@ -444,19 +462,19 @@ Before reporting issues, verify:
 
 ---
 
-##  Summary
+## Summary
 
 ### What You Have
 
- **Production-ready** object detection system  
- **3,700+ lines** of optimized code  
- **5 YOLO models** for flexibility  
- **Real-time monitoring** with FPS/ETA  
- **Advanced analytics** (zones, sizes, trends)  
- **Video export** with annotations  
- **Multi-format reports** (JSON/CSV/PDF)  
- **Complete documentation**  
- **100% test pass** rate  
+**Production-ready** object detection system  
+**3,700+ lines** of optimized code  
+**5 YOLO model tiers** for flexibility  
+**Real-time monitoring** with FPS + inference metrics  
+**Advanced analytics** (zones, size distribution, confidence trends)  
+**Video export** with annotations  
+**Multi-format reports** (JSON / CSV / PDF)  
+**Complete documentation set**  
+**100% test pass rate**  
 
 ### What You Can Do
 
@@ -480,6 +498,9 @@ Before reporting issues, verify:
 
 **Ready to start?** Run: `streamlit run src/dashboard/app.py`
 
-**Questions?** Check DEVELOPER_GUIDE.md for detailed explanations.
+**Need architecture details?** See `DEVELOPER_GUIDE.md`.
 
-**Happy Monitoring! **
+**Want performance rationale?** See `OPTIMIZATIONS.md`.
+
+---
+This document is maintained under a controlled change process. Operational feedback and production incident learnings should be incorporated via PR referencing issue IDs.

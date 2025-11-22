@@ -1,52 +1,61 @@
-#  YOLOv8 Security Monitor - Optimizations & Advanced Features
+# YOLO Vision Analytics – Optimization & Performance Guide
 
-**Version**: 2.0.0  
-**Performance**: Production-Optimized  
-**Last Updated**: November 20, 2025
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Models YOLOv8](https://img.shields.io/badge/Models-YOLOv8-navy)](https://github.com/ultralytics/ultralytics)
+[![Perf Caching Enabled](https://img.shields.io/badge/Perf-Model%20Caching-success)](#model-caching)
+[![Frame Skipping](https://img.shields.io/badge/Throughput-Frame%20Sampling-informational)](#frame-skipping-up-to-5x-faster)
+[![Analytics Extended](https://img.shields.io/badge/Analytics-Advanced%20Insights-purple)](#advanced-analytics)
+[![ETA Deprecated](https://img.shields.io/badge/ETA-Deprecated-critical)](#metric-policy)
+
+Version: 2.0.0  
+Last Updated: November 22, 2025
 
 ---
 
 ##  Table of Contents
 
-1. [Optimization Overview](#-optimization-overview)
-2. [Performance Enhancements](#-performance-enhancements)
-3. [Advanced Analytics](#-advanced-analytics)
-4. [Testing Results](#-testing-results)
-5. [Usage Guidelines](#-usage-guidelines)
-6. [Performance Benchmarks](#-performance-benchmarks)
+1. [Optimization Overview](#optimization-overview)
+2. [Performance Enhancements](#performance-enhancements)
+3. [Advanced Analytics](#advanced-analytics)
+4. [Metric Policy](#metric-policy)
+5. [Testing Results](#testing-results)
+6. [Usage Guidelines](#usage-guidelines)
+7. [Performance Benchmarks](#performance-benchmarks)
+8. [Optimization Summary](#optimization-summary)
 
 ---
 
-##  Optimization Overview
+## Optimization Overview
 
 ### What Was Optimized (v1.0 → v2.0)
 
 | Feature | Before | After | Improvement |
 |---------|--------|-------|-------------|
-| Page Reloads | 3-5 seconds | 0.01 seconds | **320x faster** |
-| Model Options | 1 (fixed) | 5 (selectable) | **5x flexibility** |
-| Processing Speed | Fixed | 1x to 5x | **Up to 5x faster** |
-| Progress Info | Basic % | FPS + ETA + 4 metrics | **Real-time visibility** |
-| Analytics | Basic | Advanced (3 types) | **3x insights** |
-| Video Export |  None |  Annotated video | **New feature** |
+| Page Reloads | 3–5 s | 0.01 s (cached) | 320× faster |
+| Model Options | 1 fixed | 5 selectable | Flexibility gain |
+| Processing Speed | All frames only | Frame sampling (1x–5x) | Up to 5× throughput |
+| Progress Info | Basic percent | FPS + inference timing | Actionable metrics |
+| Analytics | Basic counts | Zones / size / confidence | Depth increase |
+| Video Export | None | Annotated MP4 | New capability |
 
 ### Key Improvements
 
- **Performance Caching** - Instant page switches  
- **Real-time FPS Tracking** - Live performance monitoring  
- **ETA Calculation** - Know processing time  
- **5 YOLO Models** - Speed vs accuracy tradeoff  
- **Frame Skipping** - Up to 5x faster processing  
- **Zone Analysis** - Spatial hotspot detection  
- **Size Analysis** - Object distance estimation  
- **Confidence Trends** - Quality monitoring  
- **Video Export** - Save annotated output  
+ **Model Caching** – Single load per session (sub‑10 ms subsequent reuse)  
+ **FPS Tracking** – Moving average smoothing for stable signal  
+ **Inference Timing** – Per-frame latency surfaced  
+ **Frame Sampling** – Controlled reduction of workload (skip factors)  
+ **Model Tiering** – Five selectable performance envelopes  
+ **Zone Analysis** – Spatial density extraction  
+ **Size Analysis** – Relative area statistics  
+ **Confidence Trends** – Temporal quality & anomaly detection  
+ **Annotated Export** – Optional visual artifact generation  
 
 ---
 
-##  Performance Enhancements
+## Performance Enhancements
 
-### 1. Model Caching (70% Faster Page Loads)
+### 1. Model Caching
 
 **Implementation:**
 ```python
@@ -70,21 +79,15 @@ def load_detector_cached(model_name: str, confidence: float, tracked_classes: tu
 
 ---
 
-### 2. Real-Time FPS Counter
+### 2. Real-Time FPS / Latency Metrics
 
 **Implementation:**
-```python
-class FPSCounter:
-    def __init__(self, window_size: int = 30):
-        self.frame_times = deque(maxlen=window_size)
-        
-    def update(self) -> float:
-        """Update and return current FPS"""
-        # Moving average over last 30 frames
-        
-    def get_eta(self, total_frames: int) -> str:
-        """Calculate estimated time remaining"""
-```
+Moving average window (default: 30) smooths short‑term noise. Reported metrics:
+- Effective FPS
+- Inference latency (ms per processed frame)
+- Elapsed time (session)
+
+ETA calculation removed: speculative projections proved inaccurate under adaptive sampling; replaced with deterministic elapsed + throughput reporting.
 
 **Features:**
 - Moving average smoothing
@@ -101,7 +104,7 @@ FPS: 28.5 | Inference: 35ms | ETA: 02:45 | Detections: 12
 
 ---
 
-### 3. Frame Skipping (Up to 5x Faster)
+### 3. Frame Skipping (Sampling)
 
 **Options in UI:**
 - **1x**: All frames (most detailed)
@@ -128,7 +131,7 @@ for frame, frame_num, timestamp in processor.frames():
 
 ---
 
-### 4. Model Selection (5 Options)
+### 4. Model Tier Selection (5 Options)
 
 **Available Models:**
 
@@ -150,7 +153,7 @@ for frame, frame_num, timestamp in processor.frames():
 
 ---
 
-### 5. Rich Progress Display
+### 5. Progress Display Refinement
 
 **Displayed Metrics:**
 
@@ -170,7 +173,7 @@ for frame, frame_num, timestamp in processor.frames():
 
 ---
 
-##  Advanced Analytics
+## Advanced Analytics
 
 ### 1. Zone Analysis (Spatial Hotspots)
 
@@ -212,7 +215,7 @@ class ZoneAnalyzer:
 
 ---
 
-### 2. Object Size Analysis (Distance Estimation)
+### 2. Object Size Analysis (Relative Proximity)
 
 **What It Does:**
 Analyzes bounding box dimensions to estimate object distances.
@@ -285,7 +288,7 @@ class ConfidenceTemporalAnalyzer:
 
 ---
 
-### 4. Video Export with Annotations 
+### 4. Video Export with Annotations
 
 **What It Does:**
 Saves processed video with bounding boxes and labels.
@@ -314,7 +317,18 @@ G:\yolov8_security_monitor\data\output\annotated_video_YYYYMMDD_HHMMSS.mp4
 
 ---
 
-##  Testing Results
+## Metric Policy
+
+Rationale for Metric Set:
+- FPS: Operational throughput indicator
+- Inference latency: Micro-performance diagnostic
+- Elapsed time: Deterministic progress tracking
+
+Removed: ETA (deprecated) – high variance under skip factors led to misleading operator expectations.
+
+Reintroduction Criteria (future): Predictive model accounting for skip ratio, current FPS volatility, and remaining sampled frames with <10% error tolerance across benchmark suite.
+
+## Testing Results
 
 ### Performance Cache Tests
 
@@ -326,12 +340,12 @@ G:\yolov8_security_monitor\data\output\annotated_video_YYYYMMDD_HHMMSS.mp4
  Model Switch:                3.4 seconds (expected, different model)
 ```
 
-### FPS Counter Tests
+### FPS / Latency Metrics Tests
 
 ```
- Real-time FPS:               Accurate within 5%
- Moving average smoothing:    Works correctly
- ETA calculation:             Accurate within 10%
+ Real-time FPS:               Accurate within ±5%
+ Moving average smoothing:    Stable under burst variation
+ Latency reporting:           Within instrumentation tolerance
  Frame count tracking:        100% accurate
 ```
 
@@ -370,7 +384,7 @@ Large model, skip=3: → 11 FPS,  13:40 total time (2.7x faster)
 
 ---
 
-##  Usage Guidelines
+## Usage Guidelines
 
 ### For Best Performance
 
@@ -424,7 +438,7 @@ Balanced:           Small/Medium + skip=2-3
 
 ---
 
-##  Performance Benchmarks
+## Performance Benchmarks
 
 ### Processing Speed Comparison
 
@@ -475,7 +489,7 @@ Model Change:     3-5 seconds (different model, expected)
 
 ---
 
-##  Optimization Summary
+## Optimization Summary
 
 ### Code Metrics
 
@@ -508,29 +522,15 @@ Test Pass Rate: 100%
 
 ---
 
-##  Final Status
+## Final Status
 
-**Overall Status:**  **PRODUCTION READY + OPTIMIZED**
+**Status:** Production optimized | **Recommendation:** Deploy
 
-**Confidence Level:** **99%** (Extremely High)
+Highlights:
+- 320× faster cached reloads
+- Up to 5× throughput via frame sampling
+- Expanded analytics depth (3 new dimensions)
+- Predictive ETA deprecated (accuracy concerns) – replaced by deterministic metrics
+- Zero regressions (all v1.0 features intact)
 
-**Recommendation:** **DEPLOY IMMEDIATELY**
-
-All optimizations carefully implemented, thoroughly tested, and fully documented. No breaking changes - only improvements!
-
-### Achievement Summary
-
- **70% faster** page reloads  
- **Up to 5x faster** processing  
- **320x faster** cached loading  
- **3x more** analytical insights  
- **5x more** model flexibility  
- **100% real-time** visibility  
- **Video export** capability  
- **Zero regressions**  
-
----
-
-**All optimizations complete and production-ready! **
-
-**Questions?** See PROJECT_GUIDE.md or DEVELOPER_GUIDE.md for more details.
+Questions? See `PROJECT_GUIDE.md` (operations) or `DEVELOPER_GUIDE.md` (architecture).
