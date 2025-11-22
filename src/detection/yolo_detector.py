@@ -313,10 +313,12 @@ class YOLODetector:
         return list(self.model.names.values())
     
     def set_confidence_threshold(self, threshold: float):
-        """Update confidence threshold"""
+        """Update confidence threshold dynamically"""
         if 0.0 <= threshold <= 1.0:
+            old_threshold = self.confidence_threshold
             self.confidence_threshold = threshold
-            logger.info(f"Confidence threshold updated to: {threshold}")
+            if old_threshold != threshold:
+                logger.info(f"Confidence threshold updated: {old_threshold:.2f} → {threshold:.2f}")
         else:
             logger.warning(f"Invalid threshold: {threshold}. Must be between 0 and 1")
     

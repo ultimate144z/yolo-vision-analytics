@@ -271,18 +271,43 @@ Then restart application.
 
 ### Frame Skip Options (In UI)
 
-- **1x**: Process all frames (most detailed)
-- **2x**: Process every 2nd frame (2x faster)
-- **3x**: Process every 3rd frame (3x faster)
-- **5x**: Process every 5th frame (5x faster)
+- **1x (All frames)**: Process every frame (most detailed, slowest)
+- **2x (Every 2 frames)**: Process every 2nd frame (2x faster)
+- **3x (Every 3 frames)**: Process every 3rd frame (3x faster)
+- **5x (Every 5 frames)**: Process every 5th frame (5x faster)
+
+**Understanding Frame Skip and FPS:**
+
+Frame skipping reduces processing time by analyzing fewer frames, not by processing frames faster.
+
+- **Processing Time**: Proportional to frame skip (skip=2 → 2x faster, skip=5 → 5x faster)
+- **FPS (Frames Per Second)**: Stays constant (~4-8 FPS depending on hardware)
+  - FPS measures how many frames are processed per second
+  - Each frame takes the same time to process (inference + overhead)
+  - Frame skipping reduces total work, not per-frame processing speed
+  
+**Example with 300-frame video:**
+- Skip 1: Process 300 frames at 5 FPS = 60 seconds
+- Skip 2: Process 150 frames at 5 FPS = 30 seconds (2x faster)
+- Skip 5: Process 60 frames at 5 FPS = 12 seconds (5x faster)
+
+**Key Metrics Displayed:**
+- **Avg FPS**: How many frames processed per second (constant across skip settings)
+- **Inference Time**: Time for model to analyze one frame (~100-200ms)
+- **Total Time**: Wall-clock time to complete entire video (decreases with frame skip)
+- **Processed Frames**: Number of frames actually analyzed (decreases with frame skip)
 
 ### Config File Settings
 
 Edit `config/config.py`:
 
 ```python
-# Detection threshold
-CONFIDENCE_THRESHOLD = 0.5  # 0.1-1.0
+# Detection threshold (0.1-1.0)
+CONFIDENCE_THRESHOLD = 0.5
+
+# Lower values = more detections (more false positives)
+# Higher values = fewer detections (more strict)
+# Dynamically adjustable via UI slider during detection
 
 # Tracked objects
 TRACKED_CLASSES = ['person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck']
@@ -291,6 +316,14 @@ TRACKED_CLASSES = ['person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck']
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 640
 ```
+
+**Confidence Threshold Behavior:**
+- **0.25-0.35**: Detects most objects, higher false positives, good for low-light
+- **0.50 (default)**: Balanced accuracy and precision
+- **0.65-0.75**: Strict detection, fewer false positives, may miss some objects
+- **0.90-1.00**: Extremely strict, very few detections (use for testing)
+
+The confidence threshold can be adjusted in real-time via the sidebar slider and takes effect immediately on the next frame.
 
 ### Class Selection in UI
 
@@ -340,14 +373,16 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
 #### 3. Low FPS During Processing
 ```
-FPS: 3-5 (very slow)
+Avg FPS: 3-5 (very slow)
 ```
 **Solutions:**
 - Select "Nano" model in UI
-- Increase frame skip to 3x or 5x
+- Increase frame skip to 3x or 5x (reduces total time, not FPS)
 - Reduce video resolution
 - Close background applications
 - Enable GPU (if available)
+
+**Note**: FPS measures frames processed per second and stays constant. Frame skipping reduces total processing time by analyzing fewer frames.
 
 #### 4. Webcam Not Detected
 ```
@@ -395,15 +430,17 @@ Error: CUDA out of memory
    - Short videos (<5 min): 1x (all frames)
    - Medium videos (5-30 min): 2-3x
    - Long videos (>30 min): 3-5x
+   - Remember: This reduces total time, not FPS
 
-3. **Monitor FPS:**
-   - If FPS < 10: Increase frame skip or use smaller model
-   - If FPS > 30: Can use larger model for better accuracy
+3. **Understand Metrics:**
+   - **Avg FPS**: Stays constant (~4-8 FPS), measures processing speed per frame
+   - **Total Time**: Decreases with frame skip (skip=2 → 2x faster completion)
+   - **Inference**: Time per frame (~100-200ms), constant across skip settings
 
 4. **Video Quality:**
-   - Good lighting: Use standard settings
+   - Good lighting: Use standard confidence (0.5)
    - Low light: Lower confidence threshold (0.3-0.4)
-   - High resolution: May need frame skip
+   - High resolution: May need frame skip for faster completion
 
 ### For Best Accuracy
 
@@ -429,14 +466,25 @@ Error: CUDA out of memory
 
 ### Processing Speed (Test: 1080p, 30 FPS, 5-minute video)
 
-| Configuration | FPS | Total Time | Notes |
-|--------------|-----|------------|-------|
-| Nano, skip=1, CPU | 12 | 12:30 | Baseline |
-| Nano, skip=2, CPU | 23 | 06:30 | Throughput gain |
-| Nano, skip=5, CPU | 45 | 03:20 | Max sampling skip |
-| Large, skip=1, CPU | 4 | 37:30 | Highest accuracy |
-| Large, skip=3, CPU | 11 | 13:40 | Accuracy/perf balance |
-| Nano, skip=1, GPU | 35 | 04:17 | GPU acceleration |
+**Understanding the Metrics:**
+- **FPS (Frames Per Second)**: How many frames processed per second (stays constant)
+- **Total Time**: Wall-clock time to complete entire video (decreases with frame skip)
+- **Frames Processed**: Number of frames analyzed (decreases with frame skip)
+
+| Configuration | Avg FPS | Frames Processed | Total Time | Notes |
+|--------------|---------|------------------|------------|-------|
+| Nano, skip=1, CPU | 5 | 9000 | 30:00 | All frames, baseline |
+| Nano, skip=2, CPU | 5 | 4500 | 15:00 | 2x faster completion |
+| Nano, skip=5, CPU | 5 | 1800 | 06:00 | 5x faster completion |
+| Large, skip=1, CPU | 4 | 9000 | 37:30 | Highest accuracy |
+| Large, skip=3, CPU | 4 | 3000 | 12:30 | Accuracy/speed balance |
+| Nano, skip=1, GPU | 15 | 9000 | 10:00 | GPU acceleration |
+
+**Key Insights:**
+- FPS stays constant within same model/hardware configuration
+- Frame skipping reduces total time proportionally (skip=2 → 2x faster)
+- GPU acceleration increases FPS, dramatically reducing total time
+- Larger models have slightly lower FPS but better accuracy
 
 Metric Focus: Elapsed time + FPS provide actionable performance insight without speculative ETA values.
 

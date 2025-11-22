@@ -198,25 +198,60 @@ class VideoProcessor:
         
         return ret, frame
     
-    def frames(self) -> Generator[Tuple[np.ndarray, int, float], None, None]:
+    def frames(self, frame_skip: int = 1) -> Generator[Tuple[np.ndarray, int, float], None, None]:
         """
         Generator that yields frames with metadata
+        
+        Args:
+            frame_skip: Process every Nth frame (1 = all frames, 2 = every other frame, etc.)
+                       For video files, this skips reading intermediate frames for performance.
+                       For webcams, frames are still read but only yielded every Nth frame.
         
         Yields:
             Tuple of (frame, frame_number, timestamp)
         """
         start_time = time.time()
+        frames_yielded = 0
         
-        while True:
-            ret, frame = self.read_frame()
+        if self.is_webcam:
+            # For webcams, we must read all frames (can't skip)
+            frames_read = 0
+            while True:
+                ret, frame = self.read_frame()
+                
+                if not ret:
+                    break
+                
+                frames_read += 1
+                
+                # Only yield every Nth frame
+                if (frames_read % frame_skip) == 0:
+                    timestamp = time.time() - start_time
+                    yield frame, self.current_frame, timestamp
+                    frames_yielded += 1
             
-            if not ret:
-                break
+            logger.info(f"Webcam: Read {frames_read} frames, yielded {frames_yielded}")
+        else:
+            # For video files, we can skip reading frames for better performance
+            frame_position = 0
             
-            timestamp = time.time() - start_time
-            yield frame, self.current_frame, timestamp
-        
-        logger.info(f"Processed {self.current_frame} frames")
+            while frame_position < self.total_frames:
+                # Set position to next frame we want to process
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_position)
+                ret, frame = self.cap.read()
+                
+                if not ret:
+                    break
+                
+                self.current_frame = frame_position + 1
+                timestamp = time.time() - start_time
+                yield frame, self.current_frame, timestamp
+                frames_yielded += 1
+                
+                # Skip to next frame position
+                frame_position += frame_skip
+            
+            logger.info(f"Video file: Yielded {frames_yielded} frames (skipped {self.total_frames - frames_yielded} frames)")
     
     def write_frame(self, frame: np.ndarray):
         """

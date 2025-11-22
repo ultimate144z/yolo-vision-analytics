@@ -29,15 +29,16 @@ logger = get_logger(__name__)
 
 
 @st.cache_resource
-def load_detector_cached(model_name: str, confidence: float, tracked_classes: tuple):
+def load_detector_cached(model_name: str, tracked_classes: tuple):
     """
     Cached detector initialization for performance
     Uses Streamlit's caching to prevent model reloading
+    Note: confidence_threshold is not cached - it's updated dynamically
     """
     logger.info(f"Loading detector with model: {model_name}")
     return YOLODetector(
         model_name=model_name,
-        confidence_threshold=confidence,
+        confidence_threshold=0.25,  # Default, will be updated dynamically
         tracked_classes=list(tracked_classes)
     )
 
@@ -101,14 +102,15 @@ class SecurityMonitorApp:
         """
         try:
             with st.spinner("Loading YOLOv8 model..."):
-                # Use cached detector for performance
+                # Use cached detector for performance (model only, not threshold)
                 self.detector = load_detector_cached(
                     model_name,
-                    confidence_threshold,
                     tuple(tracked_classes)  # Must be hashable for caching
                 )
+                # Update confidence threshold dynamically
+                self.detector.set_confidence_threshold(confidence_threshold)
                 st.session_state.detector_initialized = True
-                logger.info("Detector initialized successfully")
+                logger.info(f"Detector initialized successfully with confidence: {confidence_threshold}")
                 components.display_alert("Model loaded successfully!", "success")
         
         except Exception as e:
@@ -133,7 +135,11 @@ class SecurityMonitorApp:
             
             # Create placeholders for live updates
             status_placeholder = st.empty()
+            
+            # Progress bar should be prominently displayed at top
             progress_placeholder = st.empty()
+            progress_placeholder.info("Initializing video processing...")
+            
             metrics_row_placeholder = st.empty()
             frame_placeholder = st.empty()
             metrics_placeholder = st.empty()
@@ -182,16 +188,38 @@ class SecurityMonitorApp:
                 
                 # Calculate actual frames to process with frame skip
                 total_video_frames = video_info.get('frame_count', 0)
+                
+                # Fallback: If frame count is 0 or unknown, estimate from duration and FPS
+                if total_video_frames == 0 and not processor.is_webcam:
+                    duration = video_info.get('duration_seconds', 0)
+                    fps = video_info.get('fps', 30)
+                    if duration > 0 and fps > 0:
+                        total_video_frames = int(duration * fps)
+                        logger.info(f"Frame count unavailable, estimated from duration: {total_video_frames}")
+                
                 frames_to_process = total_video_frames // frame_skip if frame_skip > 1 else total_video_frames
                 
+                logger.info(f"=== VIDEO PROCESSING START ===")
                 logger.info(f"Total video frames: {total_video_frames}, Frame skip: {frame_skip}, Frames to process: {frames_to_process}")
+                logger.info(f"Confidence threshold: {settings['confidence_threshold']}")
+                if frame_skip > 1:
+                    logger.info(f"Frame skipping ENABLED: Will skip reading frames for faster processing")
+                else:
+                    logger.info(f"Processing ALL frames: No skipping, slowest but most comprehensive")
+                logger.info(f"Expected: All frames (skip=1) = LOWEST FPS | Skip frames = HIGHER FPS")
                 
-                for frame, frame_num, timestamp in processor.frames():
-                    # Skip frames if configured
-                    if frame_num % frame_skip != 0:
-                        continue
+                # Initialize progress bar
+                progress_placeholder.progress(0.0, text="Starting video processing...")
+                
+                processed_frame_count = 0
+                for frame, frame_num, timestamp in processor.frames(frame_skip=frame_skip):
+                    # Frame skipping now handled by video processor for efficiency
+                    processed_frame_count += 1
                     
                     frame_start_time = time.time()
+                    
+                    # Update confidence threshold dynamically from current settings
+                    self.detector.set_confidence_threshold(settings['confidence_threshold'])
                     
                     # Run detection
                     inference_start = time.time()
@@ -222,47 +250,60 @@ class SecurityMonitorApp:
                     
                     # Update FPS counter
                     current_fps = self.fps_counter.update()
+                    avg_fps = self.fps_counter.get_average_fps()
                     
-                    # Update UI every 10 frames
-                    if frame_num % 10 == 0:
+                    # Update UI every 10 processed frames (not video frame number)
+                    if processed_frame_count % 10 == 0 or processed_frame_count == 1:
+                        # Log FPS and inference stats (use average FPS for accuracy)
+                        logger.info(f"Processed {processed_frame_count} frames (video frame {frame_num}): Avg FPS={avg_fps:.1f}, Inference={inference_time:.0f}ms, Detections={len(detections)}")
+                        
                         # Performance metrics row
                         with metrics_row_placeholder.container():
-                            col1, col2, col3 = st.columns(3)
+                            col1, col2, col3, col4 = st.columns(4)
                             with col1:
-                                st.metric("FPS", f"{current_fps:.1f}")
+                                st.metric("Avg FPS", f"{avg_fps:.1f}")
                             with col2:
                                 st.metric("Inference", f"{inference_time:.0f}ms")
                             with col3:
+                                st.metric("Processed", processed_frame_count)
+                            with col4:
                                 st.metric("Detections", len(detections))
                         
                         # Update frame display
                         frame_placeholder.image(
                             cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB),
-                            caption=f"Frame {frame_num}",
+                            caption=f"Processed: {processed_frame_count} | Video Frame: {frame_num}",
                             use_column_width=True
                         )
                         
                         # Update metrics
                         with metrics_placeholder.container():
                             components.display_metrics(self.detector.get_detection_summary())
-                        
-                        # Update progress
-                        progress = processor.get_progress()
-                        if progress > 0:
-                            progress_placeholder.progress(
-                                progress / 100.0,
-                                text=f"Processing: {progress:.1f}% | FPS: {current_fps:.1f}"
-                            )
+                    
+                    # Update progress based on processed frames (update every frame for smooth progress)
+                    if frames_to_process > 0:
+                        # We know total frames, show percentage progress
+                        progress_pct = (processed_frame_count / frames_to_process) * 100
+                        progress_placeholder.progress(
+                            min(progress_pct / 100.0, 1.0),
+                            text=f"Processing: {progress_pct:.1f}% | Avg FPS: {avg_fps:.1f} | Frame {processed_frame_count}/{frames_to_process}"
+                        )
+                    else:
+                        # Unknown total frames, show indeterminate progress
+                        progress_placeholder.info(
+                            f"Processing... | Avg FPS: {avg_fps:.1f} | Frames: {processed_frame_count}"
+                        )
                     
                     # Track performance
                     frame_time = (time.time() - frame_start_time) * 1000
                     self.performance.add_frame_time(frame_time)
                     self.performance.add_inference_time(inference_time)
                     
-                    frame_count += 1
-                    
                     # Store detections in session
                     st.session_state.detections_history.extend(detections)
+            
+            # Use processed_frame_count instead of frame_count
+            frame_count = processed_frame_count
             
             # Release video writer if used
             if video_writer is not None:
@@ -273,6 +314,20 @@ class SecurityMonitorApp:
             # Complete processing
             self.performance.stop()
             progress_placeholder.progress(1.0, text="Processing complete!")
+            
+            # Log final statistics
+            avg_fps = self.fps_counter.get_average_fps()
+            total_time = self.performance.get_total_time()
+            logger.info(f"=== VIDEO PROCESSING COMPLETE ===")
+            logger.info(f"Processed {frame_count} frames in {total_time:.2f} seconds")
+            logger.info(f"Average FPS: {avg_fps:.2f}")
+            logger.info(f"Frame skip setting: {frame_skip}")
+            if frame_skip > 1:
+                theoretical_all_frames_time = total_time * frame_skip
+                logger.info(f"Speedup: ~{frame_skip}x faster than processing all frames")
+                logger.info(f"Estimated time if all frames: ~{theoretical_all_frames_time:.2f} seconds")
+            logger.info(f"Confidence threshold: {settings['confidence_threshold']}")
+            logger.info(f"Total detections: {self.analytics.total_detections}")
             
             # Generate heatmap
             self.heatmap_gen.generate()
@@ -365,6 +420,9 @@ class SecurityMonitorApp:
                         break
                     
                     frame_start_time = time.time()
+                    
+                    # Update confidence threshold dynamically from current settings
+                    self.detector.set_confidence_threshold(settings['confidence_threshold'])
                     
                     # Detect objects
                     inference_start = time.time()

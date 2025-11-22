@@ -11,6 +11,7 @@ from typing import Optional
 class FPSCounter:
     """
     Real-time FPS counter with moving average
+    Measures actual processing throughput (processed frames per second)
     """
     
     def __init__(self, window_size: int = 30):
@@ -25,28 +26,31 @@ class FPSCounter:
         self.start_time = time.time()
         self.frame_count = 0
         self.last_frame_time = time.time()
+        self.total_processing_time = 0.0
     
     def update(self) -> float:
         """
         Update FPS counter with new frame
+        Measures instantaneous FPS based on time since last processed frame
         
         Returns:
-            Current FPS
+            Current FPS (moving average)
         """
         current_time = time.time()
         frame_time = current_time - self.last_frame_time
         self.frame_times.append(frame_time)
         self.last_frame_time = current_time
         self.frame_count += 1
+        self.total_processing_time += frame_time
         
         return self.get_fps()
     
     def get_fps(self) -> float:
         """
-        Get current FPS
+        Get current FPS (instantaneous, based on recent frames)
         
         Returns:
-            Frames per second
+            Frames per second (moving average)
         """
         if len(self.frame_times) == 0:
             return 0.0
@@ -58,7 +62,8 @@ class FPSCounter:
     
     def get_average_fps(self) -> float:
         """
-        Get average FPS since start
+        Get average FPS since start (total processed frames / wall clock time)
+        This is the true throughput metric
         
         Returns:
             Average frames per second
@@ -104,3 +109,4 @@ class FPSCounter:
         self.start_time = time.time()
         self.frame_count = 0
         self.last_frame_time = time.time()
+        self.total_processing_time = 0.0

@@ -44,9 +44,18 @@ Capabilities:
 
 ### User Experience
 - Declarative sidebar configuration
-- Real-time progress metrics (FPS, inference latency, detections)
+- Real-time progress metrics (Avg FPS, inference latency, detections)
+- Dynamic confidence threshold adjustment (updates in real-time)
+- Flexible class selection (Default/All/Custom presets)
+- Smooth progress tracking for all frame skip settings
 - Cached navigation (no remount delays)
 - Optional annotated export path
+
+### Performance
+- Efficient frame skipping (2-5x faster processing)
+- Smart video seeking (skips reading unnecessary frames)
+- Constant per-frame FPS regardless of skip setting
+- Progress updates every frame for smooth UI feedback
 
 Refer to `OPTIMIZATIONS.md` for methodology, deeper reasoning, and benchmark protocol.
 
