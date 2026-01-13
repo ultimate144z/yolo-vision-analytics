@@ -9,7 +9,7 @@
 [![Last Updated](https://img.shields.io/badge/Updated-Nov%2022%202025-lightgrey)](#)
 [![Issues](https://img.shields.io/badge/Issues-GitHub%20Tracker-informational)](https://github.com/ultimate144z/yolo-vision-analytics/issues)
 
-Version: 2.0.0
+Version: 2.1.0
 
 A production-grade real-time object detection and analytics system built on YOLOv8, OpenCV, and Streamlit. Designed for security monitoring, traffic analysis, and operational video intelligence.
 
@@ -36,6 +36,9 @@ Capabilities:
 - Moving-average FPS sampling (stable performance signal)
 - Frame skipping (adaptive workload reduction)
 - Five selectable model tiers (speed ↔ accuracy continuum)
+- **Batch processing** for video files (configurable batch size)
+- **TensorRT auto-export** for NVIDIA GPUs (up to 5x faster inference)
+- **Async video writing** (non-blocking I/O)
 
 ### Analytics
 - Zone analyzer (3×3 spatial grid activity)

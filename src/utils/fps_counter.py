@@ -28,20 +28,28 @@ class FPSCounter:
         self.last_frame_time = time.time()
         self.total_processing_time = 0.0
     
-    def update(self) -> float:
+    def update(self, num_frames: int = 1) -> float:
         """
-        Update FPS counter with new frame
-        Measures instantaneous FPS based on time since last processed frame
+        Update FPS counter with new frame(s)
+        Measures instantaneous FPS based on time since last processed frame/batch
+        
+        Args:
+            num_frames: Number of frames processed in this update
         
         Returns:
             Current FPS (moving average)
         """
         current_time = time.time()
-        frame_time = current_time - self.last_frame_time
-        self.frame_times.append(frame_time)
-        self.last_frame_time = current_time
-        self.frame_count += 1
-        self.total_processing_time += frame_time
+        batch_time = current_time - self.last_frame_time
+        
+        if num_frames > 0:
+            # Calculate average time per frame for this batch
+            avg_frame_time = batch_time / num_frames
+            self.frame_times.append(avg_frame_time)
+            
+            self.last_frame_time = current_time
+            self.frame_count += num_frames
+            self.total_processing_time += batch_time
         
         return self.get_fps()
     

@@ -9,8 +9,8 @@
 [![Security Local Execution](https://img.shields.io/badge/Security-Local%20Data%20Only-critical)](#security--privacy)
 [![Architecture Modular](https://img.shields.io/badge/Architecture-Modular%20Layered-lightgrey)](#architecture-overview)
 
-Version: 2.0.0  
-Last Updated: November 22, 2025
+Version: 2.1.0  
+Last Updated: January 14, 2026
 
 ---
 > Purpose: Technical reference for maintainers and contributors. Covers architecture, data contracts, extensibility, performance levers, and quality standards. End‑user workflow lives in `PROJECT_GUIDE.md`; optimization rationale in `OPTIMIZATIONS.md`.

@@ -28,10 +28,11 @@ class SecurityLogger:
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(getattr(logging, config.LOG_LEVEL))
+        self.logger.propagate = False  # Prevent duplicate logs from root logger
         
-        # Prevent duplicate handlers
+        # Clear any existing handlers to prevent duplicates on Streamlit re-runs
         if self.logger.handlers:
-            return
+            self.logger.handlers.clear()
         
         # File handler with rotation (on G: drive)
         if log_file is None:

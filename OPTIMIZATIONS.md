@@ -8,8 +8,8 @@
 [![Analytics Extended](https://img.shields.io/badge/Analytics-Advanced%20Insights-purple)](#advanced-analytics)
 [![ETA Deprecated](https://img.shields.io/badge/ETA-Deprecated-critical)](#metric-policy)
 
-Version: 2.0.0  
-Last Updated: November 22, 2025
+Version: 2.1.0  
+Last Updated: January 14, 2026
 
 ---
 
@@ -28,7 +28,7 @@ Last Updated: November 22, 2025
 
 ## Optimization Overview
 
-### What Was Optimized (v1.0 → v2.0)
+### What Was Optimized (v1.0 → v2.1)
 
 | Feature | Before | After | Improvement |
 |---------|--------|-------|-------------|
@@ -38,6 +38,9 @@ Last Updated: November 22, 2025
 | Progress Info | Basic percent | FPS + inference timing | Actionable metrics |
 | Analytics | Basic counts | Zones / size / confidence | Depth increase |
 | Video Export | None | Annotated MP4 | New capability |
+| **Batch Processing** | 1 frame/call | 4-8 frames/batch | 1.5-3× faster |
+| **GPU Acceleration** | PyTorch only | TensorRT auto-export | Up to 5× faster |
+| **Video Writing** | Blocking I/O | Async thread | Non-blocking |
 
 ### Key Improvements
 
@@ -50,6 +53,9 @@ Last Updated: November 22, 2025
  **Size Analysis** – Relative area statistics  
  **Confidence Trends** – Temporal quality & anomaly detection  
  **Annotated Export** – Optional visual artifact generation  
+ **Batch Inference** – Process multiple frames per model call (GPU-optimized)  
+ **TensorRT Export** – Automatic conversion for NVIDIA GPUs  
+ **Async Video Writing** – Non-blocking I/O via dedicated thread  
 
 ---
 

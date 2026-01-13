@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timedelta
 
 import sys
+import torch # Needed for cuda check
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import config.config as config
@@ -212,150 +213,194 @@ class SecurityMonitorApp:
                 progress_placeholder.progress(0.0, text="Starting video processing...")
                 
                 processed_frame_count = 0
-                for frame, frame_num, timestamp in processor.frames(frame_skip=frame_skip):
-                    # Frame skipping now handled by video processor for efficiency
-                    processed_frame_count += 1
+                # START BATCH PROCESSING OPTIMIZATION
+                # Determine batch size (default 1 for webcam, higher for video files)
+                batch_size = 1
+                if not processor.is_webcam:
+                    # Use config batch size or default to 8 for GPU, 4 for CPU
+                    default_batch = 8 if torch.cuda.is_available() else 4
+                    batch_size = settings.get('batch_size', default_batch)
+                
+                # ONNX models have static batch size, force batch_size=1
+                if hasattr(self.detector, 'model_format') and self.detector.model_format == 'onnx':
+                    if batch_size > 1:
+                        logger.info(f"ONNX model detected - forcing batch_size=1 (was {batch_size})")
+                        batch_size = 1
+                
+                logger.info(f"Processing with batch size: {batch_size}")
+                
+                for frames, frame_nums, timestamps in processor.frames_batch(batch_size=batch_size, frame_skip=frame_skip):
+                    frames_count_in_batch = len(frames)
+                    processed_frame_count += frames_count_in_batch
                     
                     frame_start_time = time.time()
                     
-                    # Update confidence threshold dynamically from current settings
+                    # Update confidence threshold dynamically
                     self.detector.set_confidence_threshold(settings['confidence_threshold'])
                     
-                    # Run detection
+                    # Run detection on batch
                     inference_start = time.time()
-                    detections = self.detector.detect(frame, track=True, timestamp=timestamp)
+                    # Detect accepts list of frames now
+                    detections_batch = self.detector.detect(frames, track=True, timestamp=timestamps)
                     inference_time = (time.time() - inference_start) * 1000
+                    # Average inference time per frame for metrics
+                    avg_inference_per_frame = inference_time / frames_count_in_batch
                     
-                    # Add to analytics
-                    self.analytics.add_detections(detections, frame_num)
-                    self.heatmap_gen.add_detections(detections)
+                    # Post-process batch results
+                    annotated_frames = []
+                    last_annotated_frame = None
                     
-                    # Advanced analytics
-                    for det in detections:
-                        self.zone_analyzer.add_detection(det)
-                        self.size_analyzer.add_detection(det)
-                        self.confidence_analyzer.add_detection(det, frame_num)
-                    
-                    # Draw detections
-                    annotated_frame = self.detector.draw_detections(
-                        frame,
-                        detections,
-                        show_confidence=settings['show_confidence'],
-                        show_track_id=settings['show_track_id']
-                    )
-                    
-                    # Write frame to output video if enabled
-                    if video_writer is not None:
-                        video_writer.write(annotated_frame)
-                    
-                    # Update FPS counter
-                    current_fps = self.fps_counter.update()
+                    # Iterate through batch results
+                    # Handle case where detect returns single list if batch_size=1 (though our detect update handles this, let's be safe)
+                    if batch_size == 1 and not isinstance(detections_batch[0], list) and not isinstance(detections_batch, list):
+                            # Should rely on detector returning list of lists for list input
+                            pass 
+
+                    for i, detections in enumerate(detections_batch):
+                        current_frame = frames[i]
+                        current_frame_num = frame_nums[i]
+                        
+                        # Add to analytics
+                        self.analytics.add_detections(detections, current_frame_num)
+                        self.heatmap_gen.add_detections(detections)
+                        
+                        # Advanced analytics
+                        for det in detections:
+                            self.zone_analyzer.add_detection(det)
+                            self.size_analyzer.add_detection(det)
+                            self.confidence_analyzer.add_detection(det, current_frame_num)
+                        
+                        # Draw detections (needed for video export and display)
+                        # Only draw if needed (export enabled or it's the frame we'll display)
+                        # Optimization: if not exporting and not displaying this specific frame, skip drawing?
+                        # But we usually want to export.
+                        
+                        annotated_frame = self.detector.draw_detections(
+                            current_frame,
+                            detections,
+                            show_confidence=settings['show_confidence'],
+                            show_track_id=settings['show_track_id']
+                        )
+                        annotated_frames.append(annotated_frame)
+                        last_annotated_frame = annotated_frame
+                        
+                        # Write frame to output video if enabled
+                        if video_writer is not None:
+                            video_writer.write(annotated_frame)
+                        
+                        # Store detections
+                        st.session_state.detections_history.extend(detections)
+
+                    # Update FPS counter (batch update)
+                    # We called update() once per frame in original, here we can call it once with num_frames?
+                    # FPSCounter might need update. For now, just call it once per batch iteration
+                    # effectively measuring batch throughput.
+                    # To be accurate, we should probably call update() N times or modify FPSCounter.
+                    # Let's just update based on time elapsed for the batch.
+                    current_fps = self.fps_counter.update(num_frames=frames_count_in_batch)
                     avg_fps = self.fps_counter.get_average_fps()
                     
-                    # Update UI every 10 processed frames (not video frame number)
-                    if processed_frame_count % 10 == 0 or processed_frame_count == 1:
-                        # Log FPS and inference stats (use average FPS for accuracy)
-                        logger.info(f"Processed {processed_frame_count} frames (video frame {frame_num}): Avg FPS={avg_fps:.1f}, Inference={inference_time:.0f}ms, Detections={len(detections)}")
-                        
-                        # Performance metrics row
-                        with metrics_row_placeholder.container():
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Avg FPS", f"{avg_fps:.1f}")
-                            with col2:
-                                st.metric("Inference", f"{inference_time:.0f}ms")
-                            with col3:
-                                st.metric("Processed", processed_frame_count)
-                            with col4:
-                                st.metric("Detections", len(detections))
-                        
-                        # Update frame display
-                        frame_placeholder.image(
-                            cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB),
-                            caption=f"Processed: {processed_frame_count} | Video Frame: {frame_num}",
-                            use_column_width=True
-                        )
-                        
-                        # Update metrics
-                        with metrics_placeholder.container():
-                            components.display_metrics(self.detector.get_detection_summary())
+                    # Performance metrics
+                    batch_proc_time = (time.time() - frame_start_time) * 1000
+                    self.performance.add_frame_time(batch_proc_time / frames_count_in_batch) # Avg per frame
+                    self.performance.add_inference_time(avg_inference_per_frame)
+
+                    # Update UI
+                    # We update UI every batch or every N frames. 
+                    # Since we have `last_annotated_frame`, we show that.
                     
-                    # Update progress based on processed frames (update every frame for smooth progress)
+                    if processed_frame_count % 10 < batch_size or processed_frame_count < batch_size * 2: # Approx every 10 frames
+                        # Update logs and UI
+                        if frames_count_in_batch > 0:
+                            last_frame_num = frame_nums[-1]
+                            logger.info(f"Processed {processed_frame_count} frames: Avg FPS={avg_fps:.1f}, Batch Inf={inference_time:.0f}ms")
+                            
+                            with metrics_row_placeholder.container():
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("Avg FPS", f"{avg_fps:.1f}")
+                                with col2:
+                                    st.metric("Inference/Frame", f"{avg_inference_per_frame:.1f}ms")
+                                with col3:
+                                    st.metric("Processed", processed_frame_count)
+                                with col4:
+                                    st.metric("Last Batch Dets", len(detections_batch[-1]))
+                            
+                            frame_placeholder.image(
+                                cv2.cvtColor(last_annotated_frame, cv2.COLOR_BGR2RGB),
+                                caption=f"Processed: {processed_frame_count} | Video Frame: {last_frame_num}",
+                                use_column_width=True
+                            )
+                            
+                            with metrics_placeholder.container():
+                                components.display_metrics(self.detector.get_detection_summary())
+
+                    # Progress bar
                     if frames_to_process > 0:
-                        # We know total frames, show percentage progress
                         progress_pct = (processed_frame_count / frames_to_process) * 100
                         progress_placeholder.progress(
                             min(progress_pct / 100.0, 1.0),
                             text=f"Processing: {progress_pct:.1f}% | Avg FPS: {avg_fps:.1f} | Frame {processed_frame_count}/{frames_to_process}"
                         )
                     else:
-                        # Unknown total frames, show indeterminate progress
                         progress_placeholder.info(
                             f"Processing... | Avg FPS: {avg_fps:.1f} | Frames: {processed_frame_count}"
                         )
-                    
-                    # Track performance
-                    frame_time = (time.time() - frame_start_time) * 1000
-                    self.performance.add_frame_time(frame_time)
-                    self.performance.add_inference_time(inference_time)
-                    
-                    # Store detections in session
-                    st.session_state.detections_history.extend(detections)
             
-            # Use processed_frame_count instead of frame_count
-            frame_count = processed_frame_count
-            
-            # Release video writer if used
-            if video_writer is not None:
-                video_writer.release()
-                logger.info(f"Annotated video saved: {output_video_path}")
-                st.session_state.output_video_path = str(output_video_path)
-            
-            # Complete processing
-            self.performance.stop()
-            progress_placeholder.progress(1.0, text="Processing complete!")
-            
-            # Log final statistics
-            avg_fps = self.fps_counter.get_average_fps()
-            total_time = self.performance.get_total_time()
-            logger.info(f"=== VIDEO PROCESSING COMPLETE ===")
-            logger.info(f"Processed {frame_count} frames in {total_time:.2f} seconds")
-            logger.info(f"Average FPS: {avg_fps:.2f}")
-            logger.info(f"Frame skip setting: {frame_skip}")
-            if frame_skip > 1:
-                theoretical_all_frames_time = total_time * frame_skip
-                logger.info(f"Speedup: ~{frame_skip}x faster than processing all frames")
-                logger.info(f"Estimated time if all frames: ~{theoretical_all_frames_time:.2f} seconds")
-            logger.info(f"Confidence threshold: {settings['confidence_threshold']}")
-            logger.info(f"Total detections: {self.analytics.total_detections}")
-            
-            # Generate heatmap
-            self.heatmap_gen.generate()
-            st.session_state.heatmap_data = self.heatmap_gen.heatmap
-            
-            # Store analytics
-            st.session_state.analytics_data = self.analytics.get_summary_report()
-            st.session_state.performance_metrics = {
-                'average_fps': self.fps_counter.get_average_fps(),
-                'total_frames': frame_count,
-                'processing_time': self.performance.get_total_time()
-            }
-            
-            # Store advanced analytics
-            st.session_state.advanced_analytics = {
-                'zone_analysis': self.zone_analyzer.get_zone_summary(),
-                'size_analysis': self.size_analyzer.get_size_statistics(),
-                'confidence_trend': self.confidence_analyzer.get_confidence_trend()
-            }
-            
-            st.session_state.processing_complete = True
-            
-            logger.info(f"Video processing complete. Processed {frame_count} frames")
-            components.display_alert(
-                f"Processing complete! Analyzed {frame_count} frames with "
-                f"{self.analytics.total_detections} detections.",
-                "success"
-            )
+                # Use processed_frame_count instead of frame_count
+                frame_count = processed_frame_count
+                
+                # Release video writer if used
+                if video_writer is not None:
+                    video_writer.release()
+                    logger.info(f"Annotated video saved: {output_video_path}")
+                    st.session_state.output_video_path = str(output_video_path)
+                
+                # Complete processing
+                self.performance.stop()
+                progress_placeholder.progress(1.0, text="Processing complete!")
+                
+                # Log final statistics
+                avg_fps = self.fps_counter.get_average_fps()
+                total_time = self.performance.get_total_time()
+                logger.info(f"=== VIDEO PROCESSING COMPLETE ===")
+                logger.info(f"Processed {frame_count} frames in {total_time:.2f} seconds")
+                logger.info(f"Average FPS: {avg_fps:.2f}")
+                logger.info(f"Frame skip setting: {frame_skip}")
+                if frame_skip > 1:
+                    theoretical_all_frames_time = total_time * frame_skip
+                    logger.info(f"Speedup: ~{frame_skip}x faster than processing all frames")
+                    logger.info(f"Estimated time if all frames: ~{theoretical_all_frames_time:.2f} seconds")
+                logger.info(f"Confidence threshold: {settings['confidence_threshold']}")
+                logger.info(f"Total detections: {self.analytics.total_detections}")
+                
+                # Generate heatmap
+                self.heatmap_gen.generate()
+                st.session_state.heatmap_data = self.heatmap_gen.heatmap
+                
+                # Store analytics
+                st.session_state.analytics_data = self.analytics.get_summary_report()
+                st.session_state.performance_metrics = {
+                    'average_fps': self.fps_counter.get_average_fps(),
+                    'total_frames': frame_count,
+                    'processing_time': self.performance.get_total_time()
+                }
+                
+                # Store advanced analytics
+                st.session_state.advanced_analytics = {
+                    'zone_analysis': self.zone_analyzer.get_zone_summary(),
+                    'size_analysis': self.size_analyzer.get_size_statistics(),
+                    'confidence_trend': self.confidence_analyzer.get_confidence_trend()
+                }
+                
+                st.session_state.processing_complete = True
+                
+                logger.info(f"Video processing complete. Processed {frame_count} frames")
+                components.display_alert(
+                    f"Processing complete! Analyzed {frame_count} frames with "
+                    f"{self.analytics.total_detections} detections.",
+                    "success"
+                )
             
         except Exception as e:
             logger.error(f"Error processing video: {e}")

@@ -6,7 +6,7 @@ Handles model loading, inference, and object tracking
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Union
 from dataclasses import dataclass
 from collections import defaultdict
 import torch
@@ -62,8 +62,8 @@ class YOLODetector:
         logger.info(f"Device: {self.device}")
         logger.info(f"Confidence threshold: {self.confidence_threshold}")
         
-        # Load model
-        self.model = self._load_model()
+        # Load model (returns tuple of model and format)
+        self.model, self.model_format = self._load_model()
         
         # Tracking data
         self.track_history = defaultdict(list)
@@ -81,17 +81,37 @@ class YOLODetector:
             logger.warning("No GPU detected, using CPU (slower)")
             return "cpu"
     
-    def _load_model(self) -> YOLO:
+    def _load_model(self) -> Tuple[YOLO, str]:
         """
         Load YOLO model from disk or download if not exists
         Model stored on G: drive in models/ directory
+        Automatically exports to TensorRT (GPU) or ONNX (CPU) for faster inference
+        
+        Returns:
+            Tuple of (model, format) where format is 'pt', 'onnx', or 'engine'
         """
         model_path = config.MODEL_DIR / self.model_name
         
         try:
+            # Define optimized model paths
+            trt_path = model_path.with_suffix('.engine')
+            onnx_path = model_path.with_suffix('.onnx')
+            loaded_format = 'pt'  # Track which format we loaded
+            
             if model_path.exists():
-                logger.info(f"Loading model from: {model_path}")
-                model = YOLO(str(model_path))
+                # GPU: Prefer TensorRT engine for maximum speed
+                if self.device == 'cuda' and trt_path.exists():
+                    logger.info(f"Loading optimized TensorRT model: {trt_path}")
+                    model = YOLO(str(trt_path), task='detect')
+                    loaded_format = 'engine'
+                # CPU: Prefer ONNX for faster inference
+                elif self.device == 'cpu' and onnx_path.exists():
+                    logger.info(f"Loading optimized ONNX model: {onnx_path}")
+                    model = YOLO(str(onnx_path), task='detect')
+                    loaded_format = 'onnx'
+                else:
+                    logger.info(f"Loading model from: {model_path}")
+                    model = YOLO(str(model_path))
             else:
                 logger.info(f"Model not found, downloading {self.model_name}...")
                 # Download model - it will be cached in current directory first
@@ -105,62 +125,116 @@ class YOLODetector:
                     shutil.copy(str(downloaded_path), str(model_path))
                     logger.info(f"Model saved to G: drive")
             
-            # Move model to device
-            model.to(self.device)
-            logger.info("Model loaded successfully")
-            return model
+            # GPU Optimization: Export to TensorRT for CUDA users (only if using .pt)
+            if loaded_format == 'pt' and self.device == 'cuda' and not trt_path.exists():
+                logger.info("CUDA detected. Exporting to TensorRT for maximum GPU performance...")
+                try:
+                    model.export(format='engine')
+                    if trt_path.exists():
+                        logger.info("TensorRT export successful. Reloading optimized engine...")
+                        model = YOLO(str(trt_path), task='detect')
+                        loaded_format = 'engine'
+                except Exception as e:
+                    logger.warning(f"TensorRT export failed (continuing with PyTorch): {e}")
+            # CPU Optimization: ONNX export DISABLED - causes compatibility issues with tracking
+            # If you want ONNX, manually export and ensure your use case doesn't need tracking
+            # elif loaded_format == 'pt' and self.device == 'cpu' and not onnx_path.exists():
+            #     logger.info("CPU mode detected. Exporting to ONNX for faster CPU inference...")
+            #     try:
+            #         model.export(format='onnx', simplify=True)
+            #         if onnx_path.exists():
+            #             logger.info("ONNX export successful. Reloading optimized model...")
+            #             model = YOLO(str(onnx_path), task='detect')
+            #             loaded_format = 'onnx'
+            #     except Exception as e:
+            #         logger.warning(f"ONNX export failed (continuing with PyTorch): {e}")
+
+            # Move model to device ONLY for PyTorch models (not ONNX/TensorRT)
+            if loaded_format == 'pt':
+                model.to(self.device)
+                
+            logger.info(f"Model loaded successfully (format: {loaded_format})")
+            return model, loaded_format
             
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise
     
     def detect(self, 
-               frame: np.ndarray, 
+               frame: Union[np.ndarray, List[np.ndarray]], 
                track: bool = True,
-               timestamp: float = None) -> List[Detection]:
+               timestamp: Union[float, List[float]] = None) -> Union[List[Detection], List[List[Detection]]]:
         """
-        Perform object detection on a single frame
+        Perform object detection on a single frame or batch of frames
         
         Args:
-            frame: Input frame (BGR format)
+            frame: Input frame (BGR) or list of frames
             track: Enable object tracking
-            timestamp: Optional timestamp for detection
+            timestamp: Optional timestamp(s)
         
         Returns:
-            List of Detection objects
+            List of Detection objects (if single frame) OR List of lists of Detection objects (if batch)
         """
-        self.frame_count += 1
         
         try:
+            is_batch = isinstance(frame, list)
+            
+            if is_batch:
+                self.frame_count += len(frame)
+            else:
+                self.frame_count += 1
+            
+            # ONNX/TensorRT models don't support tracking, use regular inference
+            use_track = track and self.model_format == 'pt'
+            
             # Run inference
-            if track:
+            if use_track:
+                # YOLOv8 tracking (PyTorch only)
                 results = self.model.track(
                     frame,
                     conf=self.confidence_threshold,
                     iou=config.IOU_THRESHOLD,
+                    imgsz=config.INFERENCE_SIZE,
                     persist=True,
                     verbose=False
                 )
             else:
+                # Regular inference (works with all formats)
                 results = self.model(
                     frame,
                     conf=self.confidence_threshold,
                     iou=config.IOU_THRESHOLD,
+                    imgsz=config.INFERENCE_SIZE,
                     verbose=False
                 )
             
             # Process results
-            detections = self._process_results(
-                results[0], 
-                timestamp=timestamp,
-                frame_number=self.frame_count
-            )
+            all_detections = []
             
-            return detections
+            # Handle single result vs list of results
+            if not isinstance(results, list):
+                results = [results]
+                
+            for i, result in enumerate(results):
+                current_timestamp = timestamp[i] if is_batch and timestamp else timestamp
+                # frame_number calc is approximate if not passed explicitly, but we rely on internal counting
+                current_frame_num = self.frame_count - len(frame) + i + 1 if is_batch else self.frame_count
+                
+                detections = self._process_results(
+                    result, 
+                    timestamp=current_timestamp,
+                    frame_number=current_frame_num
+                )
+                all_detections.append(detections)
+            
+            if is_batch:
+                return all_detections
+            else:
+                return all_detections[0]
             
         except Exception as e:
-            logger.error(f"Detection failed on frame {self.frame_count}: {e}")
-            return []
+            logger.error(f"Detection failed: {e}")
+            return [] if not isinstance(frame, list) else [[] for _ in frame]
     
     def _process_results(self, 
                         result, 
@@ -318,7 +392,7 @@ class YOLODetector:
             old_threshold = self.confidence_threshold
             self.confidence_threshold = threshold
             if old_threshold != threshold:
-                logger.info(f"Confidence threshold updated: {old_threshold:.2f} → {threshold:.2f}")
+                logger.info(f"Confidence threshold updated: {old_threshold:.2f} -> {threshold:.2f}")
         else:
             logger.warning(f"Invalid threshold: {threshold}. Must be between 0 and 1")
     

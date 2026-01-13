@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Generator, Optional, Tuple, Union
 from datetime import datetime
 import time
+import queue
+import threading
+
 
 import config.config as config
 from src.utils.logger import get_logger
@@ -172,6 +175,20 @@ class VideoProcessor:
                 (self.width, self.height)
             )
             
+            # Upgrade to async writer for performance (if not just a test file)
+            # This decouples I/O from the main processing loop
+            run_async = True
+            if run_async:
+                logger.info("Initializing AsyncVideoWriter for non-blocking I/O")
+                # Close the synchronous writer we just checked and open async one
+                self.writer.release()
+                self.writer = AsyncVideoWriter(
+                    str(output_path),
+                    fourcc,
+                    self.fps,
+                    (self.width, self.height)
+                )
+            
             if not self.writer.isOpened():
                 raise RuntimeError("Failed to initialize video writer")
             
@@ -252,6 +269,36 @@ class VideoProcessor:
                 frame_position += frame_skip
             
             logger.info(f"Video file: Yielded {frames_yielded} frames (skipped {self.total_frames - frames_yielded} frames)")
+    
+    def frames_batch(self, batch_size: int = 4, frame_skip: int = 1) -> Generator[Tuple[list, list, list], None, None]:
+        """
+        Yields batches of frames for optimized inference
+        
+        Args:
+            batch_size: Number of frames per batch
+            frame_skip: Process every Nth frame
+            
+        Yields:
+            Tuple of (frames_list, frame_numbers_list, timestamps_list)
+        """
+        batch_frames = []
+        batch_indices = []
+        batch_timestamps = []
+        
+        for frame, idx, ts in self.frames(frame_skip=frame_skip):
+            batch_frames.append(frame)
+            batch_indices.append(idx)
+            batch_timestamps.append(ts)
+            
+            if len(batch_frames) >= batch_size:
+                yield batch_frames, batch_indices, batch_timestamps
+                batch_frames = []
+                batch_indices = []
+                batch_timestamps = []
+        
+        # Yield remaining
+        if batch_frames:
+            yield batch_frames, batch_indices, batch_timestamps
     
     def write_frame(self, frame: np.ndarray):
         """
@@ -380,6 +427,47 @@ class VideoProcessor:
     def __del__(self):
         """Destructor"""
         self.release()
+
+
+class AsyncVideoWriter:
+    """
+    Asynchronous video writer to prevent I/O blocking
+    """
+    def __init__(self, path, fourcc, fps, size, queue_size=64):
+        self.writer = cv2.VideoWriter(path, fourcc, fps, size)
+        self.queue = queue.Queue(maxsize=queue_size)
+        self.stopped = False
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+    
+    def write(self, frame):
+        """Add frame to write queue"""
+        if not self.stopped:
+            try:
+                self.queue.put(frame, block=False)
+            except queue.Full:
+                logger.warning("Video writer queue full, dropping frame")
+    
+    def _run(self):
+        """Worker thread loop"""
+        while not self.stopped or not self.queue.empty():
+            try:
+                frame = self.queue.get(timeout=0.1)
+                self.writer.write(frame)
+                self.queue.task_done()
+            except queue.Empty:
+                continue
+            except Exception as e:
+                logger.error(f"Error in async writer: {e}")
+    
+    def release(self):
+        """Stop thread and release writer"""
+        self.stopped = True
+        self.thread.join(timeout=5.0)  # Wait max 5s for pending frames
+        self.writer.release()
+    
+    def isOpened(self):
+        return self.writer.isOpened()
 
 
 class BatchVideoProcessor:

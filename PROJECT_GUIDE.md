@@ -9,8 +9,8 @@
 [![Coverage](https://img.shields.io/badge/Coverage-Coming%20Soon-orange)](#)
 [![Issues](https://img.shields.io/badge/Issues-Tracked%20on%20GitHub-informational)](https://github.com/ultimate144z/yolo-vision-analytics/issues)
 
-Version: 2.0.0  
-Last Updated: November 22, 2025
+Version: 2.1.0  
+Last Updated: January 14, 2026
 
 ---
 

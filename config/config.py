@@ -65,7 +65,8 @@ MAX_LOG_SIZE_MB = 10
 LOG_BACKUP_COUNT = 5
 
 # Performance settings
-BATCH_SIZE = 1
+BATCH_SIZE = 4  # Batch size for video processing (higher = faster GPU utilization)
+INFERENCE_SIZE = 640  # YOLO input size (640 is default, smaller = faster but less accurate)
 MAX_WORKERS = 4
 MEMORY_LIMIT_MB = 2048
 
