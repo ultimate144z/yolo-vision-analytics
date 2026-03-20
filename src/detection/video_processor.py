@@ -50,7 +50,7 @@ class VideoProcessor:
         
         Args:
             source: Video file path, webcam index, or 'webcam'
-            output_path: Optional path to save processed video (on G: drive)
+            output_path: Optional path to save processed video
         """
         self.source = source
         self.output_path = output_path
@@ -153,41 +153,25 @@ class VideoProcessor:
             raise
     
     def _initialize_writer(self):
-        """Initialize video writer for output (on G: drive)"""
+        """Initialize video writer for output"""
         if self.output_path is None:
             return
-        
+
         try:
-            # Ensure output path is on G: drive
             output_path = Path(self.output_path)
-            if not str(output_path).startswith('G:') and not str(output_path).startswith('g:'):
-                output_path = config.OUTPUT_DIR / output_path.name
-            
+
             # Create output directory
             output_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # Initialize writer
+            # Initialize async writer for non-blocking I/O
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            self.writer = cv2.VideoWriter(
+            logger.info("Initializing AsyncVideoWriter for non-blocking I/O")
+            self.writer = AsyncVideoWriter(
                 str(output_path),
                 fourcc,
                 self.fps,
                 (self.width, self.height)
             )
-            
-            # Upgrade to async writer for performance (if not just a test file)
-            # This decouples I/O from the main processing loop
-            run_async = True
-            if run_async:
-                logger.info("Initializing AsyncVideoWriter for non-blocking I/O")
-                # Close the synchronous writer we just checked and open async one
-                self.writer.release()
-                self.writer = AsyncVideoWriter(
-                    str(output_path),
-                    fourcc,
-                    self.fps,
-                    (self.width, self.height)
-                )
             
             if not self.writer.isOpened():
                 raise RuntimeError("Failed to initialize video writer")
@@ -481,14 +465,10 @@ class BatchVideoProcessor:
         
         Args:
             video_paths: List of video file paths
-            output_dir: Output directory for processed videos (on G: drive)
+            output_dir: Output directory for processed videos
         """
         self.video_paths = [Path(p) for p in video_paths]
         self.output_dir = output_dir or config.OUTPUT_DIR
-        
-        # Ensure output dir is on G: drive
-        if not str(self.output_dir).startswith('G:') and not str(self.output_dir).startswith('g:'):
-            self.output_dir = config.OUTPUT_DIR
         
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
@@ -545,18 +525,13 @@ class BatchVideoProcessor:
 
 def save_frame(frame: np.ndarray, output_path: Union[str, Path]):
     """
-    Save single frame as image (on G: drive)
-    
+    Save single frame as image
+
     Args:
         frame: Frame to save
         output_path: Output path for image
     """
     output_path = Path(output_path)
-    
-    # Ensure on G: drive
-    if not str(output_path).startswith('G:') and not str(output_path).startswith('g:'):
-        output_path = config.OUTPUT_DIR / output_path.name
-    
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     cv2.imwrite(str(output_path), frame)

@@ -107,9 +107,8 @@ class TestDetection:
 
 
 def test_config_paths():
-    """Test that all config paths are on G: drive"""
+    """Test that all config paths are valid and under BASE_DIR"""
     paths_to_check = [
-        config.BASE_DIR,
         config.DATA_DIR,
         config.MODEL_DIR,
         config.REPORTS_DIR,
@@ -118,12 +117,13 @@ def test_config_paths():
         config.OUTPUT_DIR,
         config.EXPORTS_DIR
     ]
-    
+
     for path in paths_to_check:
-        path_str = str(path).upper()
-        assert path_str.startswith('G:'), f"Path not on G: drive: {path}"
-    
-    logger.info("✓ Config paths test passed - all on G: drive")
+        # All paths should be relative to BASE_DIR
+        assert str(path).startswith(str(config.BASE_DIR)), \
+            f"Path not under BASE_DIR: {path}"
+
+    logger.info("Config paths test passed - all under BASE_DIR")
 
 
 def test_directories_exist():

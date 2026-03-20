@@ -188,8 +188,8 @@ class SecurityMonitorApp:
                 frame_skip = settings.get('frame_skip', 1)  # Process every Nth frame
                 
                 # Calculate actual frames to process with frame skip
-                total_video_frames = video_info.get('frame_count', 0)
-                
+                total_video_frames = video_info.get('total_frames', 0)
+
                 # Fallback: If frame count is 0 or unknown, estimate from duration and FPS
                 if total_video_frames == 0 and not processor.is_webcam:
                     duration = video_info.get('duration_seconds', 0)
@@ -250,12 +250,6 @@ class SecurityMonitorApp:
                     annotated_frames = []
                     last_annotated_frame = None
                     
-                    # Iterate through batch results
-                    # Handle case where detect returns single list if batch_size=1 (though our detect update handles this, let's be safe)
-                    if batch_size == 1 and not isinstance(detections_batch[0], list) and not isinstance(detections_batch, list):
-                            # Should rely on detector returning list of lists for list input
-                            pass 
-
                     for i, detections in enumerate(detections_batch):
                         current_frame = frames[i]
                         current_frame_num = frame_nums[i]

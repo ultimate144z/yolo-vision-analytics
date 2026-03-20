@@ -84,7 +84,6 @@ class YOLODetector:
     def _load_model(self) -> Tuple[YOLO, str]:
         """
         Load YOLO model from disk or download if not exists
-        Model stored on G: drive in models/ directory
         Automatically exports to TensorRT (GPU) or ONNX (CPU) for faster inference
         
         Returns:
@@ -117,13 +116,13 @@ class YOLODetector:
                 # Download model - it will be cached in current directory first
                 model = YOLO(self.model_name)
                 
-                # Copy downloaded model to G: drive models directory
+                # Copy downloaded model to models directory
                 import shutil
                 downloaded_path = Path(self.model_name)
                 if downloaded_path.exists():
                     logger.info(f"Copying model to: {model_path}")
                     shutil.copy(str(downloaded_path), str(model_path))
-                    logger.info(f"Model saved to G: drive")
+                    logger.info(f"Model saved to {model_path}")
             
             # GPU Optimization: Export to TensorRT for CUDA users (only if using .pt)
             if loaded_format == 'pt' and self.device == 'cuda' and not trt_path.exists():

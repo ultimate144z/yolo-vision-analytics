@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-# Base paths - All on G: drive, never use C: drive
+# Base paths
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
 MODEL_DIR = BASE_DIR / "models"
@@ -11,7 +11,7 @@ INPUT_DIR = DATA_DIR / "input"
 OUTPUT_DIR = DATA_DIR / "output"
 EXPORTS_DIR = REPORTS_DIR / "exports"
 
-# Ensure all directories exist on G: drive
+# Ensure all directories exist
 for directory in [DATA_DIR, MODEL_DIR, REPORTS_DIR, LOGS_DIR, INPUT_DIR, OUTPUT_DIR, EXPORTS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -19,7 +19,11 @@ for directory in [DATA_DIR, MODEL_DIR, REPORTS_DIR, LOGS_DIR, INPUT_DIR, OUTPUT_
 YOLO_MODEL = "yolov8n.pt"  # nano model for speed (n, s, m, l, x)
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.45
-DEVICE = "cuda" if os.environ.get("CUDA_VISIBLE_DEVICES") else "cpu"  # Auto-detect GPU
+try:
+    import torch
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+except ImportError:
+    DEVICE = "cpu"
 
 # Video settings
 MAX_VIDEO_SIZE_MB = 500
