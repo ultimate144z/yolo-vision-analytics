@@ -1,285 +1,138 @@
-# YOLO Vision Analytics – Real-Time Object Intelligence Platform
+<p align="center">
+  <h1 align="center">YOLO Vision Analytics</h1>
+  <p align="center">Real-time object detection, tracking, and spatial analytics powered by YOLOv8</p>
+</p>
 
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Models YOLOv8](https://img.shields.io/badge/Models-YOLOv8-navy)](https://github.com/ultralytics/ultralytics)
-[![Framework Streamlit](https://img.shields.io/badge/Framework-Streamlit-red)](https://streamlit.io/)
-[![Status Production Ready](https://img.shields.io/badge/Status-Production%20Ready-green)](#project-status)
-[![Tests 100% Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success)](tests/)
-[![Last Updated](https://img.shields.io/badge/Updated-Nov%2022%202025-lightgrey)](#)
-[![Issues](https://img.shields.io/badge/Issues-GitHub%20Tracker-informational)](https://github.com/ultimate144z/yolo-vision-analytics/issues)
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.8%2B-3776ab?logo=python&logoColor=white" alt="Python 3.8+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License MIT"></a>
+  <a href="https://github.com/ultimate144z/yolo-vision-analytics/actions/workflows/ci.yml"><img src="https://github.com/ultimate144z/yolo-vision-analytics/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/ultralytics/ultralytics"><img src="https://img.shields.io/badge/Model-YOLOv8-0033A0?logo=yolo" alt="YOLOv8"></a>
+  <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit"></a>
+</p>
 
-Version: 2.1.0
+---
 
-A production-grade real-time object detection and analytics system built on YOLOv8, OpenCV, and Streamlit. Designed for security monitoring, traffic analysis, and operational video intelligence.
+A production-grade computer vision platform that combines **YOLOv8 object detection**, **real-time tracking**, and **interactive analytics** in a single Streamlit dashboard. Designed for security monitoring, traffic analysis, and operational video intelligence.
 
-## Purpose & Scope
+## What It Does
 
-This README provides a high-level product overview. Operational usage lives in `PROJECT_GUIDE.md`. Architecture, extension points, and internal module detail live in `DEVELOPER_GUIDE.md`. Performance rationale, methodology, and benchmark artifacts live in `OPTIMIZATIONS.md`.
-
-Capabilities:
-- Real-time multi-class object detection (80 COCO classes)
-- Configurable model selection (nano → xlarge)
-- Frame sampling (skip factors for throughput scaling)
-- Per-frame inference + FPS metrics (ETA removed—see Optimizations doc)
-- Object counting & temporal distributions
-- Spatial analytics: heatmaps & zone occupancy
-- Size & confidence trend analytics
-- Annotated video export (optional)
-- Structured reporting (JSON / CSV / PDF)
-- Stateless batch or interactive session execution
-
-## Highlights in 2.0
-
-### Performance
-- Cached model initialization (milliseconds after first load)
-- Moving-average FPS sampling (stable performance signal)
-- Frame skipping (adaptive workload reduction)
-- Five selectable model tiers (speed ↔ accuracy continuum)
-- **Batch processing** for video files (configurable batch size)
-- **TensorRT auto-export** for NVIDIA GPUs (up to 5x faster inference)
-- **Async video writing** (non-blocking I/O)
-
-### Analytics
-- Zone analyzer (3×3 spatial grid activity)
-- Size distribution & proximity inference
-- Confidence temporal trend & anomaly surfacing
-
-### User Experience
-- Declarative sidebar configuration
-- Real-time progress metrics (Avg FPS, inference latency, detections)
-- Dynamic confidence threshold adjustment (updates in real-time)
-- Flexible class selection (Default/All/Custom presets)
-- Smooth progress tracking for all frame skip settings
-- Cached navigation (no remount delays)
-- Optional annotated export path
-
-### Performance
-- Efficient frame skipping (2-5x faster processing)
-- Smart video seeking (skips reading unnecessary frames)
-- Constant per-frame FPS regardless of skip setting
-- Progress updates every frame for smooth UI feedback
-
-Refer to `OPTIMIZATIONS.md` for methodology, deeper reasoning, and benchmark protocol.
-
-## Tech Stack
-
-- **YOLOv8** (Ultralytics) - Object detection model
-- **OpenCV** - Video processing and computer vision
-- **Streamlit** - Interactive dashboard UI
-- **Plotly** - Interactive data visualization
-- **Pandas** - Data analysis and manipulation
-- **NumPy** - Numerical computations
-
-## Project Structure (Condensed)
-
-```
-yolov8_security_monitor/
- src/
-    detection/
-       yolo_detector.py       # YOLOv8 detection logic
-       video_processor.py     # Video stream handling
-    dashboard/
-       app.py                 # Main Streamlit app
-       components.py          # Dashboard UI components
-    utils/
-        logger.py              # Logging utilities
-        analytics.py           # Analytics computation
-        heatmap_generator.py   # Heatmap generation
-        report_generator.py    # Report export functionality
- data/
-    input/                     # Input videos
-    output/                    # Processed videos
-    logs/                      # Detection logs (JSON/CSV)
- models/                        # YOLOv8 model weights
- config/
-    config.py                  # Configuration settings
- reports/
-    exports/                   # Generated reports
- tests/                         # Unit tests
- docs/                          # Documentation
-
-```
+| Feature | Description |
+|---------|-------------|
+| **Real-time Detection** | Run YOLOv8 (nano to xlarge) on video files or live webcam feeds |
+| **Object Tracking** | Persistent ID tracking across frames with track history |
+| **Activity Heatmaps** | Gaussian density maps showing spatial activity patterns |
+| **Zone Analytics** | 3x3 grid spatial analysis with hotspot detection |
+| **Confidence Trends** | Temporal confidence analysis to surface anomalies |
+| **Multi-format Export** | JSON, CSV, and PDF reports with one click |
+| **Annotated Video** | Optional export of processed video with bounding boxes |
+| **Batch Processing** | Process multiple video files sequentially |
 
 ## Quick Start
 
-### Prerequisites
-- Python 3.8 or higher
-- 4GB RAM minimum (8GB recommended)
-- Webcam (optional, for live detection)
-
-### Installation
-
-**Clone the repository:**
 ```bash
+# Clone
 git clone https://github.com/ultimate144z/yolo-vision-analytics.git
 cd yolo-vision-analytics
-```
 
-**Create virtual environment:**
-```bash
+# Setup
 python -m venv venv
+source venv/bin/activate      # Linux/Mac
+# venv\Scripts\activate       # Windows
 
-# Windows
-venv\Scripts\activate
-
-# Linux/Mac
-source venv/bin/activate
-```
-
-**Install dependencies:**
-```bash
+# Install
 pip install -r requirements.txt
-```
 
-**Model Weights:** Auto-downloaded on first selection (no manual step required). Larger weights are only fetched if explicitly chosen, minimizing footprint.
-
-### Running the Application
-
-```bash
-# Activate virtual environment (if not already active)
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# Launch the dashboard
+# Run
 streamlit run src/dashboard/app.py
 ```
 
-The dashboard will open at `http://localhost:8501`
+The dashboard opens at `http://localhost:8501`. Model weights are **auto-downloaded** on first use.
 
-## Key Features
+## Architecture
 
-### 1. Real-Time Detection
-- Video file or webcam ingestion
-- Responsive bounding boxes & class labels
-- Confidence scores filtered by threshold
-
-### 2. Object Analytics
-- Distribution by class & time segment
-- Temporal frequency analysis
-- Confidence dispersion metrics
-
-### 3. Activity Heatmaps
-- Spatial density mapping
-- Zone ranking & hotspot surfacing
-- Exportable static artifacts
-
-### 4. Detection Logging
-- Structured event capture (frame, class, confidence, region)
-- Multi-format export pipeline
-- Class-level filtering
-
-### 5. Interactive Dashboard
-- Parameterized session control
-- Real-time metric and analytics panels
-- Export orchestration tab
+```
+yolo-vision-analytics/
+  src/
+    detection/
+      yolo_detector.py         # YOLOv8 inference + tracking
+      video_processor.py       # Video I/O, async writing, batch frames
+    dashboard/
+      app.py                   # Streamlit application
+      components.py            # Reusable UI components
+    utils/
+      analytics.py             # Detection statistics engine
+      advanced_analytics.py    # Zone, size, confidence analyzers
+      heatmap_generator.py     # Gaussian heatmap generation
+      report_generator.py      # JSON/CSV/PDF export
+      fps_counter.py           # Real-time FPS tracking
+      logger.py                # Rotating file + console logger
+  config/
+    config.py                  # Centralized configuration
+  tests/                       # Unit tests
+  data/                        # Input/output/logs (gitignored)
+  models/                      # Model weights (auto-downloaded)
+  reports/                     # Generated reports
+```
 
 ## Configuration
 
-Edit `config/config.py` to customize:
+All settings are in `config/config.py` and can be adjusted from the Streamlit sidebar at runtime:
 
-```python
-# Model settings
-YOLO_MODEL = "yolov8n.pt"  # Choose: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
-CONFIDENCE_THRESHOLD = 0.5
-IOU_THRESHOLD = 0.45
+| Setting | Default | Options |
+|---------|---------|---------|
+| Model | `yolov8n.pt` | `n` / `s` / `m` / `l` / `x` |
+| Confidence | `0.5` | `0.1` - `1.0` (adjustable live) |
+| Frame Skip | `1` | `1` / `2` / `3` / `5` |
+| Classes | Vehicles & People | Default / All 80 / Custom |
+| Device | Auto-detect | CUDA if available, else CPU |
 
-# Tracked object classes
-TRACKED_CLASSES = ['person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck']
-```
+## Performance Optimizations
 
-## Usage Examples
+- **TensorRT auto-export** on NVIDIA GPUs (up to 5x faster inference)
+- **Batch inference** for video files (configurable batch size)
+- **Async video writing** (non-blocking I/O via threaded queue)
+- **Frame skipping** with smart seeking (2-5x throughput gain)
+- **Cached model loading** (Streamlit `@st.cache_resource`)
+- **Moving-average FPS** for stable performance monitoring
 
-### Upload Video
-1. Launch dashboard
-2. Click "Upload Video" in sidebar
-3. Select MP4/AVI/MOV file
-4. Click "Start Detection"
-
-### Use Webcam
-1. Launch dashboard
-2. Select "Use Webcam" option
-3. Grant camera permissions
-4. Click "Start Detection"
-
-### Generate Reports
-1. Complete detection session
-2. Navigate to "Analytics" tab
-3. Select report format (CSV/JSON/PDF)
-4. Click "Download Report"
+See [`OPTIMIZATIONS.md`](OPTIMIZATIONS.md) for detailed benchmarks and methodology.
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest tests/
-
-# Run with coverage
-pytest --cov=src tests/
+pytest tests/ -v
+pytest tests/ --cov=src      # with coverage
 ```
 
-## Processing Flow
+## Tech Stack
 
-```
-Video Input → YOLOv8 Detection → Object Tracking → Analytics Generation → Dashboard Visualization
-                                                                              ↓
-                                                  Logs (JSON/CSV) ← Report Generator
-```
-
-## Engineering Focus Areas
-
-This project demonstrates:
-- Computer vision with deep learning
-- Real-time video processing
-- Web application development
-- Data visualization
-- Software engineering best practices
+- [**Ultralytics YOLOv8**](https://github.com/ultralytics/ultralytics) - Object detection & tracking
+- [**OpenCV**](https://opencv.org/) - Video processing
+- [**Streamlit**](https://streamlit.io/) - Dashboard UI
+- [**Plotly**](https://plotly.com/) - Interactive charts
+- [**Pandas**](https://pandas.pydata.org/) / [**NumPy**](https://numpy.org/) - Data processing
+- [**ReportLab**](https://www.reportlab.com/) - PDF generation
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please see the [Contributing Guidelines](CONTRIBUTING.md) for details.
+
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
+4. Push and open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[MIT](LICENSE)
 
-## Acknowledgments
+## Links
 
-- [YOLOv8](https://github.com/ultralytics/ultralytics) by Ultralytics
-- [OpenCV](https://opencv.org/) community
-- [Streamlit](https://streamlit.io/) team
-
-## Author & Contacts
-
-**ultimate144z**
-- GitHub: [@ultimate144z](https://github.com/ultimate144z)
-- Project: [YOLO Vision Analytics](https://github.com/ultimate144z/yolo-vision-analytics)
+- [Project Guide](PROJECT_GUIDE.md) - Operational usage
+- [Developer Guide](DEVELOPER_GUIDE.md) - Architecture & extension points
+- [Optimizations](OPTIMIZATIONS.md) - Performance methodology
 
 ---
 
-## Project Status
-
-**Version 2.0** - Production Ready
-
-**Feature Set:**
-- Real-time detection & logging
-- Video + webcam ingestion
-- Five model tiers (speed/accuracy dial)
-- Frame sampling for throughput scaling
-- Advanced analytics (zones / size / confidence trends)
-- Annotated video export option
-- Multi-format reporting stack
-- Interactive Streamlit dashboard
-- Test suite (10/10 passing)
-
-Last Updated: November 22, 2025
-
----
-For detailed operational guidance: `PROJECT_GUIDE.md`  
-For architecture & extension points: `DEVELOPER_GUIDE.md`  
-For optimization methodology: `OPTIMIZATIONS.md`
+Built by [@ultimate144z](https://github.com/ultimate144z)

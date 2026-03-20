@@ -1,7 +1,6 @@
 """
 Logger utility for YOLOv8 Security Monitor
 Provides file and console logging with rotation
-All logs stored on G: drive only
 """
 
 import logging
@@ -15,33 +14,29 @@ import config.config as config
 class SecurityLogger:
     """
     Custom logger class with file rotation and console output
-    Ensures all logs are written to G: drive
     """
-    
+
     def __init__(self, name: str, log_file: str = None):
         """
         Initialize logger with file and console handlers
-        
+
         Args:
             name: Logger name
-            log_file: Optional custom log file path (on G: drive)
+            log_file: Optional custom log file path
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(getattr(logging, config.LOG_LEVEL))
         self.logger.propagate = False  # Prevent duplicate logs from root logger
-        
+
         # Clear any existing handlers to prevent duplicates on Streamlit re-runs
         if self.logger.handlers:
             self.logger.handlers.clear()
-        
-        # File handler with rotation (on G: drive)
+
+        # File handler with rotation
         if log_file is None:
             log_file = config.LOG_FILE
         else:
             log_file = Path(log_file)
-            # Ensure path is on G: drive
-            if not str(log_file).startswith('G:') and not str(log_file).startswith('g:'):
-                log_file = config.LOGS_DIR / log_file.name
         
         # Create log directory if it doesn't exist
         log_file.parent.mkdir(parents=True, exist_ok=True)

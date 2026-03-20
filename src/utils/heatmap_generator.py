@@ -191,18 +191,13 @@ class HeatmapGenerator:
     
     def save(self, output_path: str, include_colorbar: bool = True):
         """
-        Save heatmap as image file (on G: drive)
-        
+        Save heatmap as image file
+
         Args:
             output_path: Output file path
             include_colorbar: Include colorbar in saved image
         """
         output_path = Path(output_path)
-        
-        # Ensure on G: drive
-        if not str(output_path).startswith('G:') and not str(output_path).startswith('g:'):
-            output_path = config.OUTPUT_DIR / output_path.name
-        
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         if include_colorbar:
@@ -314,16 +309,11 @@ class MultiClassHeatmapGenerator:
     def save_all(self, output_dir: Path):
         """
         Save all class heatmaps
-        
+
         Args:
-            output_dir: Output directory (on G: drive)
+            output_dir: Output directory
         """
         output_dir = Path(output_dir)
-        
-        # Ensure on G: drive
-        if not str(output_dir).startswith('G:') and not str(output_dir).startswith('g:'):
-            output_dir = config.OUTPUT_DIR / output_dir.name
-        
         output_dir.mkdir(parents=True, exist_ok=True)
         
         for class_name, generator in self.heatmaps.items():

@@ -34,22 +34,16 @@ logger = get_logger(__name__)
 class ReportGenerator:
     """
     Generate reports from detection data in various formats
-    All reports saved to G: drive
     """
-    
+
     def __init__(self, output_dir: Path = None):
         """
         Initialize report generator
-        
+
         Args:
-            output_dir: Output directory for reports (on G: drive)
+            output_dir: Output directory for reports
         """
         self.output_dir = output_dir or config.EXPORTS_DIR
-        
-        # Ensure on G: drive
-        if not str(self.output_dir).startswith('G:') and not str(self.output_dir).startswith('g:'):
-            self.output_dir = config.EXPORTS_DIR
-        
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         logger.info(f"Report generator initialized. Output: {self.output_dir}")
